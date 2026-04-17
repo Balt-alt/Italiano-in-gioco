@@ -198,6 +198,37 @@ app.delete('/api/custom-questions/:id', (req, res) => {
 });
 
 // ══════════════════════════════════════
+// CUSTOM CONTENT (domande admin)
+// ══════════════════════════════════════
+// Lettura pubblica: i giochi la usano per caricare domande personalizzate
+app.get('/api/custom-content', (req, res) => {
+  const { game_type, category, difficulty } = req.query;
+  if (game_type && category && difficulty) {
+    return res.json(db.getCustomContent(game_type, category, difficulty));
+  }
+  res.json(db.getAllCustomContent());
+});
+
+// Scrittura protetta: solo admin
+app.post('/api/custom-content', requireAdmin, (req, res) => {
+  const { game_type, category, difficulty, data } = req.body;
+  if (!game_type || !category || !difficulty || !data) {
+    return res.status(400).json({ error: 'game_type, category, difficulty e data sono obbligatori' });
+  }
+  const allowed_types = ['quiz', 'vf', 'abbina'];
+  if (!allowed_types.includes(game_type)) {
+    return res.status(400).json({ error: 'Tipo non supportato. Usa: quiz, vf, abbina' });
+  }
+  const result = db.addCustomContent(game_type, category, difficulty, data);
+  res.status(201).json(result);
+});
+
+app.delete('/api/custom-content/:id', requireAdmin, (req, res) => {
+  db.deleteCustomContent(req.params.id);
+  res.json({ ok: true });
+});
+
+// ══════════════════════════════════════
 // ADMIN
 // ══════════════════════════════════════
 app.post('/api/admin/verify-pin', (req, res) => {

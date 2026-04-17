@@ -79,9 +79,61 @@ function getQuizBank(cat) {
 // ══════════════════════════════════════
 // GAME ROUTER
 // ══════════════════════════════════════
+// Converte domande custom (db format) nel formato interno dei giochi
+function adaptCustomQuiz(items, d) {
+  return items
+    .filter(item => item.game_type === 'quiz')
+    .flatMap(item => {
+      try {
+        const data = typeof item.data === 'string' ? JSON.parse(item.data) : item.data;
+        if (!data.q || !data.a) return [];
+        return [{ q: data.q, a: data.a, w: data.w || [], hint: data.hint || '', explanation: data.explanation || '' }];
+      } catch(_) { return []; }
+    });
+}
+
+function adaptCustomVF(items) {
+  return items
+    .filter(item => item.game_type === 'vf')
+    .flatMap(item => {
+      try {
+        const data = typeof item.data === 'string' ? JSON.parse(item.data) : item.data;
+        if (!data.testo) return [];
+        return [{ aff: data.testo, v: data.risposta === 'Vero', x: data.explanation || '' }];
+      } catch(_) { return []; }
+    });
+}
+
+function adaptCustomAbbina(items) {
+  return items
+    .filter(item => item.game_type === 'abbina')
+    .flatMap(item => {
+      try {
+        const data = typeof item.data === 'string' ? JSON.parse(item.data) : item.data;
+        if (!data.coppie?.length) return [];
+        return [{ title: data.titolo || 'Abbina', pairs: data.coppie.map(c => [c.l, c.r]) }];
+      } catch(_) { return []; }
+    });
+}
+
 export async function startGame(cat, mode) {
-  game = { cat, mode, qs: [], ci: 0, sc: 0, tot: 0, t0: Date.now(), tm: null, tv: 0, ms: null, os: null };
+  game = { cat, mode, qs: [], ci: 0, sc: 0, tot: 0, t0: Date.now(), tm: null, tv: 0, ms: null, os: null, _custom: { quiz: [], vf: [], abbina: [] } };
   const d = profileData.difficulty;
+
+  // Precarica domande personalizzate per questa categoria e difficoltà
+  try {
+    const [quizItems, vfItems, abbinaItems] = await Promise.all([
+      api.getCustomContent('quiz', cat, d).catch(() => []),
+      api.getCustomContent('vf', cat, d).catch(() => []),
+      api.getCustomContent('abbina', cat, d).catch(() => [])
+    ]);
+    const customItems = [...quizItems, ...vfItems, ...abbinaItems];
+    game._custom = {
+      quiz: adaptCustomQuiz(customItems, d),
+      vf: adaptCustomVF(customItems),
+      abbina: adaptCustomAbbina(customItems)
+    };
+  } catch (_) { /* ignora errori fetch custom */ }
 
   // Grammatica
   if (cat === 'grammatica') {
@@ -148,6 +200,10 @@ export async function startGame(cat, mode) {
 // ══════════════════════════════════════
 function startQuiz(bank, d, isCompleta = false, isCatena = false) {
   let pool = [...(bank[d] || bank.facile || [])];
+  // Merge domande personalizzate (solo per quiz semplice, non completa/catena)
+  if (!isCompleta && !isCatena && game._custom?.quiz?.length) {
+    pool = [...pool, ...game._custom.quiz];
+  }
   pool = shuffle(pool).slice(0, Math.min(profileData.questions_count, pool.length));
   if (!pool.length) { alert('Nessuna domanda!'); return onNavigate('category', game.cat); }
   game.qs = pool; game.tot = pool.length;
@@ -448,7 +504,9 @@ window._nextOrderQ = () => { game.ci++; if (game.ci >= game.tot) endGame(); else
 // ABBINA (Vocabolario)
 // ══════════════════════════════════════
 function startAbbina(d) {
-  const data = Q.vocabAbbina[d] || Q.vocabAbbina.facile;
+  const builtIn = Q.vocabAbbina[d] || Q.vocabAbbina.facile || [];
+  const customAbbina = game._custom?.abbina || [];
+  const data = [...builtIn, ...customAbbina];
   if (!data?.length) { alert('Non disponibile!'); return onNavigate('category', game.cat); }
   const r = data[Math.floor(Math.random() * data.length)];
   game.ms = { pairs: r.pairs, title: r.title, matched: [], selL: null };
@@ -701,6 +759,7 @@ function showLeggiQ() {
 // ══════════════════════════════════════
 function startVF(d) {
   let pool = [...(Q.compVF[d] || Q.compVF.facile || [])];
+  if (game._custom?.vf?.length) pool = [...pool, ...game._custom.vf];
   game.qs = shuffle(pool).slice(0, Math.min(profileData.questions_count, pool.length));
   game.tot = game.qs.length; showVFQ();
 }

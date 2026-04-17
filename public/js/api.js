@@ -74,6 +74,14 @@ export const api = {
   addCustomQuestion: (data) => request('/custom-questions', { method: 'POST', body: data }),
   deleteCustomQuestion: (id) => request(`/custom-questions/${id}`, { method: 'DELETE' }),
 
+  // Custom Content (domande admin)
+  getCustomContent: (gameType, category, difficulty) =>
+    request(`/custom-content?game_type=${encodeURIComponent(gameType)}&category=${encodeURIComponent(category)}&difficulty=${encodeURIComponent(difficulty)}`),
+  getAllCustomContent: () => request('/custom-content'),
+  addCustomContent: (gameType, category, difficulty, data) =>
+    request('/custom-content', { method: 'POST', body: { game_type: gameType, category, difficulty, data } }),
+  deleteCustomContent: (id) => request(`/custom-content/${id}`, { method: 'DELETE' }),
+
   // Admin
   verifyPin: async (pin) => {
     const result = await request('/admin/verify-pin', { method: 'POST', body: { pin } });

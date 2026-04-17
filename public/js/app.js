@@ -542,9 +542,13 @@ window._verifyPin = async () => {
   }
 };
 
+let _cqAbbinaCoppie = 4; // coppie abbina visibili nel form (si resetta a ogni showAdmin)
+
 async function showAdmin() {
+  _cqAbbinaCoppie = 4; // reset coppie abbina ad ogni apertura
   const stats = await api.getAdminStats();
   const errors = await api.getAllErrors('all', 50);
+  const customContent = await api.getAllCustomContent().catch(() => []);
   render(`
     <button class="nav-back" onclick="window._goProfiles()">← Profili</button>
     <h2 style="margin-bottom:14px">📊 Pannello Admin</h2>
@@ -552,6 +556,7 @@ async function showAdmin() {
       <button class="admin-tab active" onclick="window._switchTab('overview',this)">📈 Panoramica</button>
       <button class="admin-tab" onclick="window._switchTab('errors',this)">❌ Errori</button>
       <button class="admin-tab" onclick="window._switchTab('progress',this)">📊 Progressi</button>
+      <button class="admin-tab" onclick="window._switchTab('domande',this)">✏️ Domande</button>
       <button class="admin-tab" onclick="window._switchTab('manage',this)">⚙️ Gestione</button>
     </div>
 
@@ -624,6 +629,102 @@ async function showAdmin() {
       </div>
     </div>
 
+    <div class="admin-panel" id="panel-domande">
+      <div class="card">
+        <h3 style="margin-bottom:14px">✏️ Aggiungi Domanda</h3>
+
+        <!-- Selezione tipo / categoria / difficoltà -->
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+          <select id="cq-type" class="input" style="flex:1;min-width:130px" onchange="window._cqTypeChange()">
+            <option value="quiz">📝 Quiz (scelta multipla)</option>
+            <option value="vf">✅ Vero / Falso</option>
+            <option value="abbina">🔗 Abbina coppie</option>
+          </select>
+          <select id="cq-cat" class="input" style="flex:1;min-width:130px">
+            <option value="grammatica">📐 Grammatica</option>
+            <option value="vocabolario">📚 Vocabolario</option>
+            <option value="verbi">🔤 Verbi</option>
+            <option value="ortografia">✍️ Ortografia</option>
+            <option value="comprensione">📖 Comprensione</option>
+            <option value="analisi">🔬 Analisi</option>
+            <option value="produzione">✒️ Produzione</option>
+          </select>
+          <select id="cq-diff" class="input" style="flex:1;min-width:110px">
+            <option value="facile">🟢 Facile</option>
+            <option value="medio">🟡 Medio</option>
+            <option value="difficile">🔴 Difficile</option>
+          </select>
+        </div>
+
+        <!-- Campi quiz (scelta multipla) -->
+        <div id="cq-form-quiz">
+          <div class="setting-row"><label>Domanda</label><input type="text" id="cq-q-domanda" class="input" placeholder="Testo della domanda..."></div>
+          <div class="setting-row"><label>Risposta corretta</label><input type="text" id="cq-q-corretta" class="input" placeholder="Risposta giusta..."></div>
+          <div class="setting-row"><label>Sbagliata 1</label><input type="text" id="cq-q-w1" class="input" placeholder="Risposta sbagliata 1..."></div>
+          <div class="setting-row"><label>Sbagliata 2</label><input type="text" id="cq-q-w2" class="input" placeholder="Risposta sbagliata 2..."></div>
+          <div class="setting-row"><label>Sbagliata 3</label><input type="text" id="cq-q-w3" class="input" placeholder="Risposta sbagliata 3..."></div>
+          <div class="setting-row"><label>Suggerimento</label><input type="text" id="cq-q-hint" class="input" placeholder="Facoltativo..."></div>
+          <div class="setting-row"><label>Spiegazione</label><input type="text" id="cq-q-spiega" class="input" placeholder="Facoltativa..."></div>
+        </div>
+
+        <!-- Campi vero/falso -->
+        <div id="cq-form-vf" style="display:none">
+          <div class="setting-row"><label>Affermazione</label><input type="text" id="cq-vf-testo" class="input" placeholder="Scrivi l'affermazione..."></div>
+          <div class="setting-row"><label>È vera?</label>
+            <select id="cq-vf-risposta" class="input" style="max-width:160px">
+              <option value="Vero">✅ Vero</option>
+              <option value="Falso">❌ Falso</option>
+            </select>
+          </div>
+          <div class="setting-row"><label>Spiegazione</label><input type="text" id="cq-vf-spiega" class="input" placeholder="Facoltativa..."></div>
+        </div>
+
+        <!-- Campi abbina coppie -->
+        <div id="cq-form-abbina" style="display:none">
+          <div class="setting-row"><label>Titolo esercizio</label><input type="text" id="cq-ab-titolo" class="input" placeholder="Es: Abbina l'aggettivo..."></div>
+          <div id="cq-ab-coppie">
+            ${[1,2,3,4].map(i => `
+            <div style="display:flex;gap:6px;margin-bottom:6px">
+              <input type="text" id="cq-ab-l${i}" class="input" style="flex:1" placeholder="Sinistra ${i}...">
+              <span style="align-self:center;font-size:1.2rem">→</span>
+              <input type="text" id="cq-ab-r${i}" class="input" style="flex:1" placeholder="Destra ${i}...">
+            </div>`).join('')}
+          </div>
+          <button class="btn btn-ghost btn-sm" style="margin-bottom:8px" onclick="window._cqAddCoppia()">+ Aggiungi coppia</button>
+        </div>
+
+        <div style="margin-top:8px">
+          <button class="btn btn-primary" onclick="window._cqSave()">💾 Salva Domanda</button>
+        </div>
+      </div>
+
+      <!-- Lista domande personalizzate -->
+      <div class="card" style="margin-top:14px">
+        <h3 style="margin-bottom:12px">📋 Domande Personalizzate (${customContent.length})</h3>
+        ${customContent.length === 0
+          ? '<p style="color:var(--muted);text-align:center">Nessuna domanda personalizzata ancora</p>'
+          : customContent.map(item => {
+              let preview = '';
+              try {
+                const d = typeof item.data === 'string' ? JSON.parse(item.data) : item.data;
+                if (item.game_type === 'quiz') preview = esc(d.q || d.domanda || '');
+                else if (item.game_type === 'vf') preview = esc(d.testo || '');
+                else if (item.game_type === 'abbina') preview = esc(d.titolo || 'Abbinamento');
+              } catch(_) { preview = '—'; }
+              const typeIcon = item.game_type === 'quiz' ? '📝' : item.game_type === 'vf' ? '✅' : '🔗';
+              const catLabel = CATS.find(c => c.id === item.category)?.nm || item.category;
+              return `<div style="display:flex;align-items:center;gap:8px;padding:8px;margin-bottom:6px;background:rgba(177,151,252,.04);border-radius:8px;border:1px solid var(--border)">
+                <span style="font-size:1.1rem">${typeIcon}</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-weight:600;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${preview}</div>
+                  <div style="font-size:.74rem;color:var(--muted)">${catLabel} · ${item.difficulty} · ${new Date(item.created_at).toLocaleDateString('it')}</div>
+                </div>
+                <button class="btn btn-coral btn-sm" onclick="window._cqDelete(${item.id})">🗑️</button>
+              </div>`;
+            }).join('')}
+      </div>
+    </div>
+
     <div class="admin-panel" id="panel-manage">
       <div class="card">
         <h3 style="margin-bottom:12px">⚙️ Gestione</h3>
@@ -668,6 +769,82 @@ window._changePin = async () => {
 
 window._clearProfileErrors = async (id) => { if (confirm('Pulire errori?')) { await api.clearErrors(id); showAdmin(); } };
 window._deleteProfileAdmin = async (id) => { if (confirm('⚠️ Eliminare profilo?')) { await api.deleteProfile(id); showAdmin(); } };
+
+// ══════════════════════════════════════
+// CUSTOM QUESTIONS (tab Domande admin)
+// ══════════════════════════════════════
+window._cqTypeChange = () => {
+  const t = document.getElementById('cq-type')?.value;
+  document.getElementById('cq-form-quiz').style.display = t === 'quiz' ? '' : 'none';
+  document.getElementById('cq-form-vf').style.display = t === 'vf' ? '' : 'none';
+  document.getElementById('cq-form-abbina').style.display = t === 'abbina' ? '' : 'none';
+};
+
+window._cqAddCoppia = () => {
+  _cqAbbinaCoppie++;
+  const i = _cqAbbinaCoppie;
+  const container = document.getElementById('cq-ab-coppie');
+  if (!container) return;
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px';
+  row.innerHTML = `<input type="text" id="cq-ab-l${i}" class="input" style="flex:1" placeholder="Sinistra ${i}...">
+    <span style="align-self:center;font-size:1.2rem">→</span>
+    <input type="text" id="cq-ab-r${i}" class="input" style="flex:1" placeholder="Destra ${i}...">`;
+  container.appendChild(row);
+};
+
+window._cqSave = async () => {
+  const gameType = document.getElementById('cq-type')?.value;
+  const category = document.getElementById('cq-cat')?.value;
+  const difficulty = document.getElementById('cq-diff')?.value;
+
+  let data;
+  if (gameType === 'quiz') {
+    const q = document.getElementById('cq-q-domanda')?.value.trim();
+    const a = document.getElementById('cq-q-corretta')?.value.trim();
+    const w1 = document.getElementById('cq-q-w1')?.value.trim();
+    const w2 = document.getElementById('cq-q-w2')?.value.trim();
+    const w3 = document.getElementById('cq-q-w3')?.value.trim();
+    const hint = document.getElementById('cq-q-hint')?.value.trim();
+    const spiega = document.getElementById('cq-q-spiega')?.value.trim();
+    if (!q || !a || !w1 || !w2 || !w3) { alert('Compila domanda, risposta corretta e almeno 3 risposte sbagliate.'); return; }
+    data = { q, a, w: [w1, w2, w3].filter(Boolean), hint: hint || '', explanation: spiega || '' };
+  } else if (gameType === 'vf') {
+    const testo = document.getElementById('cq-vf-testo')?.value.trim();
+    const risposta = document.getElementById('cq-vf-risposta')?.value;
+    const spiega = document.getElementById('cq-vf-spiega')?.value.trim();
+    if (!testo) { alert('Scrivi l\'affermazione.'); return; }
+    data = { testo, risposta, explanation: spiega || '' };
+  } else if (gameType === 'abbina') {
+    const titolo = document.getElementById('cq-ab-titolo')?.value.trim() || 'Abbina le coppie';
+    const coppie = [];
+    for (let i = 1; i <= _cqAbbinaCoppie; i++) {
+      const l = document.getElementById(`cq-ab-l${i}`)?.value.trim();
+      const r = document.getElementById(`cq-ab-r${i}`)?.value.trim();
+      if (l && r) coppie.push({ l, r });
+    }
+    if (coppie.length < 2) { alert('Inserisci almeno 2 coppie complete.'); return; }
+    data = { titolo, coppie };
+  }
+
+  try {
+    await api.addCustomContent(gameType, category, difficulty, data);
+    alert('✅ Domanda salvata!');
+    showAdmin();
+  } catch (e) {
+    alert('Errore: ' + e.message);
+  }
+};
+
+window._cqDelete = async (id) => {
+  if (!confirm('Eliminare questa domanda?')) return;
+  try {
+    await api.deleteCustomContent(id);
+    showAdmin();
+  } catch (e) {
+    alert('Errore: ' + e.message);
+  }
+};
 
 window._exportAll = async () => {
   const data = await api.exportAll();

@@ -42,6 +42,7 @@ async function init() {
     CREATE TABLE IF NOT EXISTS spaced_repetition (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id TEXT NOT NULL, category TEXT NOT NULL, question TEXT NOT NULL, correct_answer TEXT NOT NULL, wrong_answers TEXT DEFAULT '[]', hint TEXT DEFAULT '', explanation TEXT DEFAULT '', next_review TEXT NOT NULL, interval_days REAL DEFAULT 1, ease_factor REAL DEFAULT 2.5, repetitions INTEGER DEFAULT 0, UNIQUE(profile_id, question));
     CREATE TABLE IF NOT EXISTS badges (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id TEXT NOT NULL, badge_id TEXT NOT NULL, earned_at TEXT DEFAULT (datetime('now')), UNIQUE(profile_id, badge_id));
     CREATE TABLE IF NOT EXISTS custom_questions (id INTEGER PRIMARY KEY AUTOINCREMENT, category TEXT NOT NULL, question TEXT NOT NULL, answer TEXT NOT NULL, wrong_answers TEXT DEFAULT '[]', hint TEXT DEFAULT '', created_at TEXT DEFAULT (datetime('now')));
+    CREATE TABLE IF NOT EXISTS custom_content (id INTEGER PRIMARY KEY AUTOINCREMENT, game_type TEXT NOT NULL, category TEXT NOT NULL, difficulty TEXT NOT NULL DEFAULT 'facile', data TEXT NOT NULL, created_at TEXT DEFAULT (datetime('now')));
   `);
 
   const existingPin = get("SELECT value FROM settings WHERE key=?", ['admin_pin']);
@@ -111,7 +112,17 @@ const updateStreak = (pid, correct) => { if (correct) { const p = get("SELECT st
 const getCustomQuestions = () => all("SELECT * FROM custom_questions ORDER BY created_at DESC");
 const addCustomQuestion = (d) => { run("INSERT INTO custom_questions (category,question,answer,wrong_answers,hint) VALUES (?,?,?,?,?)", [d.category,d.question,d.answer,JSON.stringify(d.wrongAnswers),d.hint||'']); return {id:lastId(),...d}; };
 const deleteCustomQuestion = (id) => run("DELETE FROM custom_questions WHERE id=?", [id]);
-const exportAll = () => ({ settings:all("SELECT * FROM settings"), profiles:all("SELECT * FROM profiles"), category_scores:all("SELECT * FROM category_scores"), error_log:all("SELECT * FROM error_log"), spaced_repetition:all("SELECT * FROM spaced_repetition"), badges:all("SELECT * FROM badges"), custom_questions:all("SELECT * FROM custom_questions") });
+// ── Custom Content (domande aggiunte dall'admin) ──
+const getCustomContent = (gameType, category, difficulty) =>
+  all("SELECT * FROM custom_content WHERE game_type=? AND category=? AND difficulty=? ORDER BY created_at DESC", [gameType, category, difficulty]);
+const getAllCustomContent = () => all("SELECT * FROM custom_content ORDER BY created_at DESC");
+const addCustomContent = (gameType, category, difficulty, data) => {
+  run("INSERT INTO custom_content (game_type,category,difficulty,data) VALUES (?,?,?,?)", [gameType, category, difficulty, JSON.stringify(data)]);
+  return { id: lastId(), game_type: gameType, category, difficulty, data };
+};
+const deleteCustomContent = (id) => run("DELETE FROM custom_content WHERE id=?", [id]);
+
+const exportAll = () => ({ settings:all("SELECT * FROM settings"), profiles:all("SELECT * FROM profiles"), category_scores:all("SELECT * FROM category_scores"), error_log:all("SELECT * FROM error_log"), spaced_repetition:all("SELECT * FROM spaced_repetition"), badges:all("SELECT * FROM badges"), custom_questions:all("SELECT * FROM custom_questions"), custom_content:all("SELECT * FROM custom_content") });
 
 const importAll = (data) => {
   runRaw("BEGIN TRANSACTION");
@@ -121,6 +132,7 @@ const importAll = (data) => {
     runRaw("DELETE FROM error_log");
     runRaw("DELETE FROM category_scores");
     runRaw("DELETE FROM custom_questions");
+    runRaw("DELETE FROM custom_content");
     runRaw("DELETE FROM profiles");
     runRaw("DELETE FROM settings");
     if (data.settings) for (const r of data.settings) runRaw("INSERT INTO settings (key,value) VALUES (?,?)", [r.key, r.value]);
@@ -129,6 +141,7 @@ const importAll = (data) => {
     if (data.error_log) for (const r of data.error_log) runRaw("INSERT INTO error_log (profile_id,category,question,user_answer,correct_answer,difficulty,created_at) VALUES (?,?,?,?,?,?,?)", [r.profile_id,r.category,r.question,r.user_answer,r.correct_answer,r.difficulty,r.created_at]);
     if (data.badges) for (const r of data.badges) runRaw("INSERT INTO badges (profile_id,badge_id,earned_at) VALUES (?,?,?)", [r.profile_id,r.badge_id,r.earned_at]);
     if (data.custom_questions) for (const r of data.custom_questions) runRaw("INSERT INTO custom_questions (category,question,answer,wrong_answers,hint,created_at) VALUES (?,?,?,?,?,?)", [r.category,r.question,r.answer,r.wrong_answers,r.hint,r.created_at]);
+    if (data.custom_content) for (const r of data.custom_content) runRaw("INSERT INTO custom_content (game_type,category,difficulty,data,created_at) VALUES (?,?,?,?,?)", [r.game_type,r.category,r.difficulty,r.data,r.created_at]);
     runRaw("COMMIT");
     scheduleSave();
   } catch (e) {
@@ -139,4 +152,4 @@ const importAll = (data) => {
 
 const getAdminStats = () => getProfiles().map(p => ({ ...getProfile(p.id), errorsByCategory: all("SELECT category, COUNT(*) as count FROM error_log WHERE profile_id=? GROUP BY category", [p.id]) }));
 
-module.exports = { init, verifyPin, setAdminPin, getProfiles, getProfile, createProfile, updateProfile, deleteProfile, saveGameResult, logError, getErrors, getAllErrors, clearErrors, getDueReviews, updateReview, addBadge, updateStreak, getCustomQuestions, addCustomQuestion, deleteCustomQuestion, exportAll, importAll, getAdminStats };
+module.exports = { init, verifyPin, setAdminPin, getProfiles, getProfile, createProfile, updateProfile, deleteProfile, saveGameResult, logError, getErrors, getAllErrors, clearErrors, getDueReviews, updateReview, addBadge, updateStreak, getCustomQuestions, addCustomQuestion, deleteCustomQuestion, getCustomContent, getAllCustomContent, addCustomContent, deleteCustomContent, exportAll, importAll, getAdminStats };
