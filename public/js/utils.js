@@ -21,7 +21,11 @@ export function shuffle(arr) {
 }
 
 export function genId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback per browser datati
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
 }
 
 export function formatTime(seconds) {

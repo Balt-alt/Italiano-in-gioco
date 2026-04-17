@@ -4,12 +4,30 @@
 
 const BASE = '/api';
 
+// Token di sessione admin (persiste nella tab corrente)
+let adminToken = sessionStorage.getItem('adminToken') || null;
+
+export function setAdminToken(token) {
+  adminToken = token;
+  if (token) sessionStorage.setItem('adminToken', token);
+  else sessionStorage.removeItem('adminToken');
+}
+
 async function request(url, opts = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (adminToken) headers['X-Admin-Token'] = adminToken;
+
   const res = await fetch(BASE + url, {
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     ...opts,
     body: opts.body ? JSON.stringify(opts.body) : undefined,
   });
+
+  // Sessione scaduta: rimuovi il token locale
+  if (res.status === 401) {
+    setAdminToken(null);
+  }
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Errore di rete' }));
     throw new Error(err.error || `HTTP ${res.status}`);
@@ -57,11 +75,27 @@ export const api = {
   deleteCustomQuestion: (id) => request(`/custom-questions/${id}`, { method: 'DELETE' }),
 
   // Admin
-  verifyPin: (pin) => request('/admin/verify-pin', { method: 'POST', body: { pin } }),
-  changePin: (pin) => request('/admin/pin', { method: 'PUT', body: { pin } }),
+  verifyPin: async (pin) => {
+    const result = await request('/admin/verify-pin', { method: 'POST', body: { pin } });
+    if (result.valid && result.token) {
+      setAdminToken(result.token);
+    }
+    return result;
+  },
+  changePin: async (pin) => {
+    const result = await request('/admin/pin', { method: 'PUT', body: { pin } });
+    // Il server invalida tutte le sessioni al cambio PIN → logout
+    setAdminToken(null);
+    return result;
+  },
   getAdminStats: () => request('/admin/stats'),
 
   // Backup
   exportAll: () => request('/backup/export'),
-  importAll: (data) => request('/backup/import', { method: 'POST', body: data }),
+  importAll: async (data) => {
+    const result = await request('/backup/import', { method: 'POST', body: data });
+    // Il server invalida le sessioni dopo import → logout
+    setAdminToken(null);
+    return result;
+  },
 };

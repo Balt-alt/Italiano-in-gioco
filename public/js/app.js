@@ -514,8 +514,9 @@ window._adminLogin = () => {
   overlay.innerHTML = `
     <div class="pin-box">
       <h3>🔒 Admin</h3>
-      <p style="font-size:.85rem;color:var(--muted);margin-bottom:14px">PIN (default: 1234)</p>
-      <input type="password" class="pin-input" id="pin-input" maxlength="6" onkeydown="if(event.key==='Enter')window._verifyPin()">
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:14px">Inserisci il PIN admin</p>
+      <input type="password" class="pin-input" id="pin-input" maxlength="20" onkeydown="if(event.key==='Enter')window._verifyPin()">
+      <p id="pin-error" style="color:#FF6B6B;font-size:.8rem;min-height:18px;margin:4px 0"></p>
       <div class="btn-group">
         <button class="btn btn-primary btn-sm" onclick="window._verifyPin()">Accedi</button>
         <button class="btn btn-ghost btn-sm" onclick="document.getElementById('pin-overlay').remove()">Annulla</button>
@@ -527,9 +528,18 @@ window._adminLogin = () => {
 
 window._verifyPin = async () => {
   const pin = document.getElementById('pin-input')?.value;
-  const result = await api.verifyPin(pin);
-  if (result.valid) { document.getElementById('pin-overlay')?.remove(); showAdmin(); }
-  else alert('PIN errato!');
+  const errEl = document.getElementById('pin-error');
+  if (errEl) errEl.textContent = '';
+  try {
+    const result = await api.verifyPin(pin);
+    if (result.valid) { document.getElementById('pin-overlay')?.remove(); showAdmin(); }
+    else if (errEl) errEl.textContent = 'PIN errato!';
+    else alert('PIN errato!');
+  } catch (e) {
+    const msg = e.message || 'Errore di accesso';
+    if (errEl) errEl.textContent = msg;
+    else alert(msg);
+  }
 };
 
 async function showAdmin() {
@@ -647,7 +657,13 @@ window._switchTab = (tab, btn) => {
 window._changePin = async () => {
   const pin = document.getElementById('new-pin')?.value.trim();
   if (!pin || pin.length < 4) { alert('Almeno 4 caratteri!'); return; }
-  await api.changePin(pin); alert('✅ PIN aggiornato!');
+  try {
+    await api.changePin(pin);
+    alert('✅ PIN aggiornato! Effettua nuovamente l\'accesso.');
+    window._goProfiles(); // torna alla schermata profili dopo logout
+  } catch (e) {
+    alert('Errore: ' + e.message);
+  }
 };
 
 window._clearProfileErrors = async (id) => { if (confirm('Pulire errori?')) { await api.clearErrors(id); showAdmin(); } };
@@ -665,8 +681,8 @@ window._importAll = async (input) => {
   try {
     const data = JSON.parse(text);
     await api.importAll(data);
-    alert('✅ Backup importato!');
-    showAdmin();
+    alert('✅ Backup importato! Effettua nuovamente l\'accesso admin.');
+    window._goProfiles(); // sessione invalidata dopo import
   } catch (e) { alert('Errore: ' + e.message); }
   input.value = '';
 };

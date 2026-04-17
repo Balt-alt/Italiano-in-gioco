@@ -1,6 +1,7 @@
 const initSqlJs = require('sql.js');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const DB_PATH = path.join(__dirname, 'data.db');
 let db;
@@ -15,10 +16,15 @@ function scheduleSave() {
 }
 
 function run(sql, params = []) { db.run(sql, params); scheduleSave(); }
+function runRaw(sql, params = []) { db.run(sql, params); }
 function get(sql, params = []) { const stmt = db.prepare(sql); stmt.bind(params); if (stmt.step()) { const r = stmt.getAsObject(); stmt.free(); return r; } stmt.free(); return null; }
 function all(sql, params = []) { const stmt = db.prepare(sql); stmt.bind(params); const rows = []; while (stmt.step()) rows.push(stmt.getAsObject()); stmt.free(); return rows; }
 function exec(sql) { db.exec(sql); scheduleSave(); }
 function lastId() { return db.exec("SELECT last_insert_rowid()")[0]?.values[0]?.[0]; }
+
+function hashPin(pin) {
+  return crypto.createHash('sha256').update(String(pin)).digest('hex');
+}
 
 async function init() {
   const SQL = await initSqlJs();
@@ -37,11 +43,26 @@ async function init() {
     CREATE TABLE IF NOT EXISTS badges (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id TEXT NOT NULL, badge_id TEXT NOT NULL, earned_at TEXT DEFAULT (datetime('now')), UNIQUE(profile_id, badge_id));
     CREATE TABLE IF NOT EXISTS custom_questions (id INTEGER PRIMARY KEY AUTOINCREMENT, category TEXT NOT NULL, question TEXT NOT NULL, answer TEXT NOT NULL, wrong_answers TEXT DEFAULT '[]', hint TEXT DEFAULT '', created_at TEXT DEFAULT (datetime('now')));
   `);
-  if (!get("SELECT value FROM settings WHERE key=?", ['admin_pin'])) run("INSERT INTO settings (key,value) VALUES (?,?)", ['admin_pin', '1234']);
+
+  const existingPin = get("SELECT value FROM settings WHERE key=?", ['admin_pin']);
+  if (!existingPin) {
+    // Primo avvio: genera PIN casuale a 6 cifre
+    const defaultPin = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log(`\n  🔑 PIN Admin generato: ${defaultPin}  ← SALVALO!\n`);
+    run("INSERT INTO settings (key,value) VALUES (?,?)", ['admin_pin', hashPin(defaultPin)]);
+  } else if (existingPin.value.length < 32) {
+    // Migrazione: PIN in chiaro → hash
+    console.log(`\n  🔄 Migrazione PIN admin a formato sicuro...\n`);
+    run("UPDATE settings SET value=? WHERE key=?", [hashPin(existingPin.value), 'admin_pin']);
+  }
 }
 
-const getAdminPin = () => get("SELECT value FROM settings WHERE key=?", ['admin_pin'])?.value || '1234';
-const setAdminPin = (pin) => run("INSERT OR REPLACE INTO settings (key,value) VALUES (?,?)", ['admin_pin', pin]);
+const verifyPin = (pin) => {
+  const stored = get("SELECT value FROM settings WHERE key=?", ['admin_pin'])?.value;
+  if (!stored) return false;
+  return stored === hashPin(pin);
+};
+const setAdminPin = (pin) => run("INSERT OR REPLACE INTO settings (key,value) VALUES (?,?)", ['admin_pin', hashPin(pin)]);
 const getProfiles = () => all("SELECT * FROM profiles ORDER BY created_at");
 const getProfile = (id) => {
   const p = get("SELECT * FROM profiles WHERE id=?", [id]);
@@ -91,15 +112,31 @@ const getCustomQuestions = () => all("SELECT * FROM custom_questions ORDER BY cr
 const addCustomQuestion = (d) => { run("INSERT INTO custom_questions (category,question,answer,wrong_answers,hint) VALUES (?,?,?,?,?)", [d.category,d.question,d.answer,JSON.stringify(d.wrongAnswers),d.hint||'']); return {id:lastId(),...d}; };
 const deleteCustomQuestion = (id) => run("DELETE FROM custom_questions WHERE id=?", [id]);
 const exportAll = () => ({ settings:all("SELECT * FROM settings"), profiles:all("SELECT * FROM profiles"), category_scores:all("SELECT * FROM category_scores"), error_log:all("SELECT * FROM error_log"), spaced_repetition:all("SELECT * FROM spaced_repetition"), badges:all("SELECT * FROM badges"), custom_questions:all("SELECT * FROM custom_questions") });
+
 const importAll = (data) => {
-  exec("DELETE FROM badges; DELETE FROM spaced_repetition; DELETE FROM error_log; DELETE FROM category_scores; DELETE FROM custom_questions; DELETE FROM profiles; DELETE FROM settings;");
-  if (data.settings) for (const r of data.settings) run("INSERT INTO settings (key,value) VALUES (?,?)", [r.key,r.value]);
-  if (data.profiles) for (const r of data.profiles) run("INSERT INTO profiles (id,name,avatar,color,xp,streak,best_streak,games_played,difficulty,questions_count,timer_seconds,answer_type,dyslexia_mode,large_text,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [r.id,r.name,r.avatar,r.color,r.xp,r.streak,r.best_streak,r.games_played,r.difficulty,r.questions_count,r.timer_seconds,r.answer_type,r.dyslexia_mode,r.large_text,r.created_at,r.updated_at]);
-  if (data.category_scores) for (const r of data.category_scores) run("INSERT INTO category_scores (profile_id,category,played,best_score) VALUES (?,?,?,?)", [r.profile_id,r.category,r.played,r.best_score]);
-  if (data.error_log) for (const r of data.error_log) run("INSERT INTO error_log (profile_id,category,question,user_answer,correct_answer,difficulty,created_at) VALUES (?,?,?,?,?,?,?)", [r.profile_id,r.category,r.question,r.user_answer,r.correct_answer,r.difficulty,r.created_at]);
-  if (data.badges) for (const r of data.badges) run("INSERT INTO badges (profile_id,badge_id,earned_at) VALUES (?,?,?)", [r.profile_id,r.badge_id,r.earned_at]);
-  if (data.custom_questions) for (const r of data.custom_questions) run("INSERT INTO custom_questions (category,question,answer,wrong_answers,hint,created_at) VALUES (?,?,?,?,?,?)", [r.category,r.question,r.answer,r.wrong_answers,r.hint,r.created_at]);
+  runRaw("BEGIN TRANSACTION");
+  try {
+    runRaw("DELETE FROM badges");
+    runRaw("DELETE FROM spaced_repetition");
+    runRaw("DELETE FROM error_log");
+    runRaw("DELETE FROM category_scores");
+    runRaw("DELETE FROM custom_questions");
+    runRaw("DELETE FROM profiles");
+    runRaw("DELETE FROM settings");
+    if (data.settings) for (const r of data.settings) runRaw("INSERT INTO settings (key,value) VALUES (?,?)", [r.key, r.value]);
+    if (data.profiles) for (const r of data.profiles) runRaw("INSERT INTO profiles (id,name,avatar,color,xp,streak,best_streak,games_played,difficulty,questions_count,timer_seconds,answer_type,dyslexia_mode,large_text,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [r.id,r.name,r.avatar,r.color,r.xp,r.streak,r.best_streak,r.games_played,r.difficulty,r.questions_count,r.timer_seconds,r.answer_type,r.dyslexia_mode,r.large_text,r.created_at,r.updated_at]);
+    if (data.category_scores) for (const r of data.category_scores) runRaw("INSERT INTO category_scores (profile_id,category,played,best_score) VALUES (?,?,?,?)", [r.profile_id,r.category,r.played,r.best_score]);
+    if (data.error_log) for (const r of data.error_log) runRaw("INSERT INTO error_log (profile_id,category,question,user_answer,correct_answer,difficulty,created_at) VALUES (?,?,?,?,?,?,?)", [r.profile_id,r.category,r.question,r.user_answer,r.correct_answer,r.difficulty,r.created_at]);
+    if (data.badges) for (const r of data.badges) runRaw("INSERT INTO badges (profile_id,badge_id,earned_at) VALUES (?,?,?)", [r.profile_id,r.badge_id,r.earned_at]);
+    if (data.custom_questions) for (const r of data.custom_questions) runRaw("INSERT INTO custom_questions (category,question,answer,wrong_answers,hint,created_at) VALUES (?,?,?,?,?,?)", [r.category,r.question,r.answer,r.wrong_answers,r.hint,r.created_at]);
+    runRaw("COMMIT");
+    scheduleSave();
+  } catch (e) {
+    try { runRaw("ROLLBACK"); } catch (_) {}
+    throw e;
+  }
 };
+
 const getAdminStats = () => getProfiles().map(p => ({ ...getProfile(p.id), errorsByCategory: all("SELECT category, COUNT(*) as count FROM error_log WHERE profile_id=? GROUP BY category", [p.id]) }));
 
-module.exports = { init, getAdminPin, setAdminPin, getProfiles, getProfile, createProfile, updateProfile, deleteProfile, saveGameResult, logError, getErrors, getAllErrors, clearErrors, getDueReviews, updateReview, addBadge, updateStreak, getCustomQuestions, addCustomQuestion, deleteCustomQuestion, exportAll, importAll, getAdminStats };
+module.exports = { init, verifyPin, setAdminPin, getProfiles, getProfile, createProfile, updateProfile, deleteProfile, saveGameResult, logError, getErrors, getAllErrors, clearErrors, getDueReviews, updateReview, addBadge, updateStreak, getCustomQuestions, addCustomQuestion, deleteCustomQuestion, exportAll, importAll, getAdminStats };

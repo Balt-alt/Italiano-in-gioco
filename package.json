@@ -1,6 +1,6 @@
 {
   "name": "italiano-in-gioco",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "App educativa per imparare l'italiano - con giochi interattivi, multi-profilo e pannello admin",
   "main": "server.js",
   "scripts": {
