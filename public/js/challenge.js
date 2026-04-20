@@ -3,6 +3,18 @@
 // ══════════════════════════════════════
 import { esc, escAttr, shuffle, CATS } from './utils.js';
 import * as Q from './questions.js';
+import { avatarHTML } from './avatar.js';
+
+// Renderizza un avatar piccolo (32px) partendo dalla stringa JSON salvata nel profilo
+function renderAvatar(raw, size = 32) {
+  try {
+    const cfg = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (cfg && typeof cfg === 'object' && cfg.bg) return avatarHTML(cfg, size);
+  } catch (_) {}
+  // Fallback: emoji o prima lettera colorata
+  const text = String(raw || '🦊');
+  return `<span style="font-size:${size * 0.6}px;line-height:1">${text.length < 5 ? text : '🦊'}</span>`;
+}
 
 // Banche domande per categoria (formato {q, a, w:[]})
 const QUIZ_BANKS = {
@@ -383,7 +395,7 @@ function _getClassSocket() {
       if (listEl && room.participants) {
         listEl.innerHTML = room.participants.map(p => `
           <div class="cc-participant-row">
-            <span>${p.avatar}</span>
+            <span style="display:inline-flex;align-items:center">${renderAvatar(p.avatar, 28)}</span>
             <span style="font-weight:700;flex:1;text-align:left">${esc(p.name)}</span>
             ${room.state === 'playing' ? `<span style="font-weight:800;color:var(--lav)">${p.score}/${room.total}</span>` : ''}
           </div>`).join('');
@@ -395,7 +407,7 @@ function _getClassSocket() {
           .map((p, i) => `
             <div class="cc-participant-row ${p.profileId === _ccProfileId ? 'me' : ''}">
               <span style="min-width:22px;font-weight:700;color:var(--muted)">${i + 1}.</span>
-              <span>${p.avatar}</span>
+              <span style="display:inline-flex;align-items:center">${renderAvatar(p.avatar, 28)}</span>
               <span style="flex:1;font-weight:700">${esc(p.name)}</span>
               <span style="font-weight:800;color:var(--lav)">${p.score}</span>
               ${p.finished ? '<span style="color:var(--mint);font-size:.75rem">✓</span>' : ''}
@@ -416,7 +428,7 @@ function _getClassSocket() {
         .map((p, i) => `
           <div class="cc-participant-row ${p.profileId === _ccProfileId ? 'me' : ''}">
             <span style="min-width:22px;font-weight:700;color:var(--muted)">${i + 1}.</span>
-            <span>${p.avatar}</span>
+            <span style="display:inline-flex;align-items:center">${renderAvatar(p.avatar, 28)}</span>
             <span style="flex:1;font-weight:700">${esc(p.name)}</span>
             <span style="font-weight:800;color:var(--lav)">${p.score}</span>
             ${p.finished ? '<span style="color:var(--mint);font-size:.75rem">✓</span>' : ''}
@@ -562,7 +574,7 @@ function _ccShowClassResults(leaderboard, title) {
         ${leaderboard.map(e => `
           <div class="cc-participant-row ${e.profileId === _ccProfileId ? 'me' : ''}" style="padding:10px 14px">
             <span style="font-size:1.4rem;min-width:32px">${medals[e.rank - 1] || e.rank + '.'}</span>
-            <span style="font-size:1.2rem">${e.avatar}</span>
+            <span style="display:inline-flex;align-items:center">${renderAvatar(e.avatar, 32)}</span>
             <span style="font-weight:700;flex:1;text-align:left">${esc(e.name)}</span>
             <span style="font-weight:900;color:var(--lav)">${e.score}/${e.total}</span>
             <span style="font-size:.78rem;color:var(--muted);min-width:38px">${e.pct}%</span>

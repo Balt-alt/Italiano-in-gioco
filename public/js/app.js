@@ -1166,7 +1166,7 @@ function _getAdminClassSocket() {
           ? '<p style="color:var(--muted);font-size:.85rem">Nessun alunno ancora...</p>'
           : room.participants.map(p => `
             <div class="cc-participant-row">
-              <span>${p.avatar}</span>
+              <span style="display:inline-flex;align-items:center">${avatarHTML(parseAvatar(p.avatar), 28)}</span>
               <span style="font-weight:700;flex:1">${esc(p.name)}</span>
               ${room.state === 'playing' ? `<span style="font-weight:800;color:var(--lav)">${p.score}/${room.total}</span>` : ''}
               ${p.finished ? '<span style="color:var(--mint);font-size:.8rem">✓</span>' : ''}
@@ -1181,7 +1181,7 @@ function _getAdminClassSocket() {
           .map((p, i) => `
             <div class="cc-participant-row">
               <span style="min-width:24px;font-weight:700;color:var(--muted)">${i + 1}.</span>
-              <span>${p.avatar}</span>
+              <span style="display:inline-flex;align-items:center">${avatarHTML(parseAvatar(p.avatar), 28)}</span>
               <span style="flex:1;font-weight:700">${esc(p.name)}</span>
               <span style="font-weight:900;color:var(--lav)">${p.score}/${room.total}</span>
               ${p.finished ? '<span style="color:var(--mint);font-size:.8rem">✓</span>' : ''}
@@ -1198,7 +1198,7 @@ function _getAdminClassSocket() {
         listEl.innerHTML = leaderboard.map(e => `
           <div class="cc-participant-row" style="padding:10px 14px">
             <span style="font-size:1.3rem;min-width:30px">${medals[e.rank - 1] || e.rank + '.'}</span>
-            <span style="font-size:1.1rem">${e.avatar}</span>
+            <span style="display:inline-flex;align-items:center">${avatarHTML(parseAvatar(e.avatar), 32)}</span>
             <span style="font-weight:700;flex:1">${esc(e.name)}</span>
             <span style="font-weight:900;color:var(--lav)">${e.score}/${e.total}</span>
             <span style="color:var(--muted);font-size:.8rem">${e.pct}%</span>
