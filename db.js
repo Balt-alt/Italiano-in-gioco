@@ -148,7 +148,9 @@ const addCustomContent = (gameType, category, difficulty, data) => {
 };
 const deleteCustomContent = (id) => run("DELETE FROM custom_content WHERE id=?", [id]);
 
-const exportAll = () => ({ settings:all("SELECT * FROM settings"), profiles:all("SELECT * FROM profiles"), category_scores:all("SELECT * FROM category_scores"), error_log:all("SELECT * FROM error_log"), spaced_repetition:all("SELECT * FROM spaced_repetition"), badges:all("SELECT * FROM badges"), custom_questions:all("SELECT * FROM custom_questions"), custom_content:all("SELECT * FROM custom_content") });
+// Esclude segreti sensibili (chiavi API) dal backup scaricabile
+const SECRET_SETTINGS = new Set(['anthropic_api_key']);
+const exportAll = () => ({ settings:all("SELECT * FROM settings").filter(r => !SECRET_SETTINGS.has(r.key)), profiles:all("SELECT * FROM profiles"), category_scores:all("SELECT * FROM category_scores"), error_log:all("SELECT * FROM error_log"), spaced_repetition:all("SELECT * FROM spaced_repetition"), badges:all("SELECT * FROM badges"), custom_questions:all("SELECT * FROM custom_questions"), custom_content:all("SELECT * FROM custom_content") });
 
 const importAll = (data) => {
   runRaw("BEGIN TRANSACTION");

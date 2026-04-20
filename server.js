@@ -58,6 +58,11 @@ const pinAttempts = new Map(); // ip -> { count, resetAt }
 const MAX_PIN_ATTEMPTS = 5;
 const PIN_WINDOW_MS = 15 * 60 * 1000; // 15 minuti
 
+// Rate limit generazione AI: evita bill shock sull'API Anthropic
+const aiAttempts = new Map(); // ip -> { count, resetAt }
+const MAX_AI_REQUESTS = 20;
+const AI_WINDOW_MS = 60 * 60 * 1000; // 20 richieste/ora per IP
+
 function checkRateLimit(ip) {
   const now = Date.now();
   const entry = pinAttempts.get(ip) || { count: 0, resetAt: now + PIN_WINDOW_MS };
@@ -299,6 +304,18 @@ app.put('/api/admin/settings', requireAdmin, (req, res) => {
 
 // Generazione domande con AI
 app.post('/api/admin/generate-questions', requireAdmin, async (req, res) => {
+  // Rate limit: 20 richieste/ora per IP (evita abuso chiave API)
+  const ip = req.ip || req.connection.remoteAddress;
+  const now = Date.now();
+  const entry = aiAttempts.get(ip) || { count: 0, resetAt: now + AI_WINDOW_MS };
+  if (now > entry.resetAt) { entry.count = 0; entry.resetAt = now + AI_WINDOW_MS; }
+  if (entry.count >= MAX_AI_REQUESTS) {
+    const waitMin = Math.ceil((entry.resetAt - now) / 60000);
+    return res.status(429).json({ error: `Troppe richieste AI. Riprova tra ${waitMin} minuti.` });
+  }
+  entry.count++;
+  aiAttempts.set(ip, entry);
+
   const { category, difficulty, topic, count } = req.body;
   if (!category || !difficulty || !topic) {
     return res.status(400).json({ error: 'category, difficulty e topic sono obbligatori' });
@@ -382,6 +399,9 @@ app.use((err, req, res, next) => {
 
 // ── SPA fallback ──
 app.get('*', (req, res) => {
+  // Le rotte /api/* non matchate devono restituire JSON, non l'HTML del SPA
+  // (altrimenti il client parsa HTML come JSON e mostra errori di rete generici).
+  if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Endpoint non trovato' });
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 

@@ -21,7 +21,15 @@ let currentProfile = null;
 
 const main = () => document.getElementById('main-content');
 
-function render(html) { main().innerHTML = html; }
+// Teardown registrato dalla schermata corrente (es. minigames ferma RAF/timer/listener).
+// Viene chiamato prima di ogni nuovo render per evitare memory leak e listener fantasma.
+let _currentTeardown = null;
+window._setScreenTeardown = (fn) => { _currentTeardown = fn; };
+
+function render(html) {
+  if (_currentTeardown) { try { _currentTeardown(); } catch (_) {} _currentTeardown = null; }
+  main().innerHTML = html;
+}
 
 function applyAccessibility() {
   if (!currentProfile) return;
@@ -601,9 +609,12 @@ let _cqAbbinaCoppie = 4; // coppie abbina visibili nel form (si resetta a ogni s
 
 async function showAdmin() {
   _cqAbbinaCoppie = 4; // reset coppie abbina ad ogni apertura
-  const stats = await api.getAdminStats();
-  const errors = await api.getAllErrors('all', 50);
-  const customContent = await api.getAllCustomContent().catch(() => []);
+  // Parallelizzate: erano 3 round-trip sequenziali
+  const [stats, errors, customContent] = await Promise.all([
+    api.getAdminStats(),
+    api.getAllErrors('all', 50),
+    api.getAllCustomContent().catch(() => [])
+  ]);
   render(`
     <button class="nav-back" onclick="window._goProfiles()">← Profili</button>
     <h2 style="margin-bottom:14px">📊 Pannello Admin</h2>
@@ -1022,9 +1033,11 @@ window._aiGenerate = async () => {
             </div>
           </label>
         </div>`).join('')}
-      <button class="btn btn-primary btn-sm" style="margin-top:4px" onclick="window._aiSaveSelected(${JSON.stringify(questions).replace(/'/g,"\\'")},'${cat}','${diff}')">
+      <button class="btn btn-primary btn-sm" style="margin-top:4px" onclick="window._aiSaveSelected()">
         💾 Salva Selezionate
       </button>`;
+    // Salviamo i dati in memoria invece di iniettarli in onclick (evita XSS e quoting issues)
+    window._aiLastGenerated = { questions, cat, diff };
   } catch(e) {
     errEl.textContent = e.message.includes('non configurata') ? '⚠️ ' + e.message : 'Errore: ' + e.message;
   } finally {
@@ -1033,7 +1046,10 @@ window._aiGenerate = async () => {
   }
 };
 
-window._aiSaveSelected = async (questions, cat, diff) => {
+window._aiSaveSelected = async () => {
+  const data = window._aiLastGenerated;
+  if (!data) { alert('Nessuna domanda da salvare.'); return; }
+  const { questions, cat, diff } = data;
   const toSave = questions.filter((_, i) => document.getElementById(`ai-q-${i}`)?.checked);
   if (!toSave.length) { alert('Seleziona almeno una domanda.'); return; }
   let saved = 0;

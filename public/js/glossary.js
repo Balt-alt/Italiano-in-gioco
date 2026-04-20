@@ -80,7 +80,7 @@ export const GLOSSARY = [
 
   { id: 'coniugazioni', term: 'Coniugazioni', cat: 'Morfologia', tag: 'Verbi', color: '#FF6B6B',
     def: 'I verbi italiani si dividono in tre coniugazioni in base alla desinenza dell\'infinito.',
-    types: ['1ª coniugazione: -ARE (parlare, camminare)', '2ª coniugazione: -ERE (leggere, correre)', '3ª Ccniugazione: -IRE (dormire, finire)'],
+    types: ['1ª coniugazione: -ARE (parlare, camminare)', '2ª coniugazione: -ERE (leggere, correre)', '3ª coniugazione: -IRE (dormire, finire)'],
     examples: ['<b>Parlare</b>: io parl-o, tu parl-i, lui parl-a', '<b>Leggere</b>: io legg-o, tu legg-i, lui legg-e', '<b>Dormire</b>: io dorm-o, tu dorm-i, lui dorm-e'] },
 
   // ── MORFOLOGIA: Avverbi ─────────────────────────────────

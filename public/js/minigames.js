@@ -2,11 +2,36 @@
 // Tre giochi arcade classici come premio dopo la sfida giornaliera.
 // Ispirati alle implementazioni di straker (github.com/straker).
 
+// Polyfill roundRect per Safari < 16 / iOS vecchi (tablet scolastici)
+if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+    if (typeof r === 'number') r = [r, r, r, r];
+    else if (!Array.isArray(r)) r = [0, 0, 0, 0];
+    this.beginPath();
+    this.moveTo(x + r[0], y);
+    this.arcTo(x + w, y, x + w, y + h, r[1]);
+    this.arcTo(x + w, y + h, x, y + h, r[2]);
+    this.arcTo(x, y + h, x, y, r[3]);
+    this.arcTo(x, y, x + w, y, r[0]);
+    this.closePath();
+    return this;
+  };
+}
+
 let _render, _navigate;
 let _cleanupFn = null;
 
 function cleanup() {
-  if (_cleanupFn) { _cleanupFn(); _cleanupFn = null; }
+  if (_cleanupFn) { try { _cleanupFn(); } catch (_) {} _cleanupFn = null; }
+  // Pulizia riferimenti a closure morte (GC)
+  delete window._mgRestart;
+  delete window._memFlip;
+}
+
+// Registra il teardown presso il router globale: sarà invocato
+// automaticamente al prossimo render(), indipendentemente dal percorso di navigazione.
+function registerTeardown() {
+  if (window._setScreenTeardown) window._setScreenTeardown(cleanup);
 }
 
 export function initMinigames(renderFn, navigateFn) {
@@ -57,7 +82,7 @@ function gameShell(title, canvasId, width, height, extraHtml = '') {
       ${extraHtml}
       <canvas id="${canvasId}" width="${width}" height="${height}"
         style="border-radius:16px;max-width:100%;touch-action:none;margin-top:8px"></canvas>
-      <div id="mg-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99;display:flex;align-items:center;justify-content:center">
+      <div id="mg-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99;align-items:center;justify-content:center">
         <div class="card" style="padding:32px;text-align:center;max-width:300px">
           <div id="mg-over-text" style="font-size:1.4rem;font-weight:700;margin-bottom:16px"></div>
           <div id="mg-over-score" style="color:var(--muted);margin-bottom:20px"></div>
@@ -195,6 +220,7 @@ function startSnake() {
 
   window._mgRestart = init;
   _cleanupFn = () => { clearInterval(interval); cancelAnimationFrame(rafId); document.removeEventListener('keydown', onKey); };
+  registerTeardown();
 
   init();
 }
@@ -215,7 +241,7 @@ window._mgMemory = function () {
         <div id="mg-score" style="font-weight:700"></div>
       </div>
       <div id="mem-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:360px;width:100%;padding:8px 16px"></div>
-      <div id="mg-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99;display:flex;align-items:center;justify-content:center">
+      <div id="mg-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99;align-items:center;justify-content:center">
         <div class="card" style="padding:32px;text-align:center;max-width:300px">
           <div id="mg-over-text" style="font-size:1.4rem;font-weight:700;margin-bottom:16px"></div>
           <div id="mg-over-score" style="color:var(--muted);margin-bottom:20px"></div>
@@ -295,6 +321,7 @@ function startMemory() {
 
   window._mgRestart = init;
   _cleanupFn = () => clearInterval(timerInt);
+  registerTeardown();
 
   init();
 }
@@ -425,6 +452,7 @@ function startBreakout() {
 
   window._mgRestart = init;
   _cleanupFn = () => { cancelAnimationFrame(rafId); document.removeEventListener('keydown', onKey); };
+  registerTeardown();
 
   init();
 }
