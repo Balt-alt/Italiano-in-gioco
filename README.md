@@ -5,6 +5,7 @@ App educativa interattiva per imparare l'italiano, pensata per bambini della scu
 ## Caratteristiche
 
 - **25+ modalità di gioco** per 7 categorie: Grammatica, Vocabolario, Verbi, Ortografia, Comprensione, Analisi Logica, Produzione Scritta
+- **Sfide online in tempo reale** via Socket.io — crea una stanza, condividi il codice, gioca contro un amico su un altro dispositivo
 - **Multi-profilo**: ogni bambino ha il suo account con XP, livello, badge e progressi separati
 - **Pannello Admin** protetto da PIN con sessioni sicure (token server-side, scadenza 2h)
 - **Domande personalizzate**: aggiungi quiz, vero/falso e abbinamenti direttamente dal pannello admin senza toccare il codice

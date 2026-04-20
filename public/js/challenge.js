@@ -73,13 +73,13 @@ export function showOnlineLobby() {
 
       <div style="color:var(--muted);font-size:.82rem;margin-bottom:12px">— oppure entra con un codice —</div>
 
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;align-items:stretch">
         <input type="text" id="chl-code-input" class="input"
-          style="flex:1;text-transform:uppercase;letter-spacing:5px;font-size:1.3rem;font-weight:800;text-align:center"
+          style="flex:1;text-transform:uppercase;letter-spacing:5px;font-size:1.3rem;font-weight:800;text-align:center;min-width:0"
           placeholder="XXXX" maxlength="4"
           oninput="this.value=this.value.toUpperCase()"
           onkeydown="if(event.key==='Enter')window._chlJoin()">
-        <button class="btn btn-mint" onclick="window._chlJoin()">Entra →</button>
+        <button class="btn btn-mint btn-sm" style="flex-shrink:0;align-self:stretch;border-radius:var(--rs)" onclick="window._chlJoin()">Entra →</button>
       </div>
       <div id="chl-lobby-error" style="color:var(--coral);font-size:.85rem;margin-top:10px;min-height:20px"></div>
     </div>`);
