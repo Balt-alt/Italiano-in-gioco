@@ -663,14 +663,9 @@ async function showAdmin() {
       <div class="card">
         <h3 style="margin-bottom:14px">✏️ Aggiungi Domanda</h3>
 
-        <!-- Selezione tipo / categoria / difficoltà -->
+        <!-- Categoria e difficoltà -->
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
-          <select id="cq-type" class="input" style="flex:1;min-width:130px" onchange="window._cqTypeChange()">
-            <option value="quiz">📝 Quiz (scelta multipla)</option>
-            <option value="vf">✅ Vero / Falso</option>
-            <option value="abbina">🔗 Abbina coppie</option>
-          </select>
-          <select id="cq-cat" class="input" style="flex:1;min-width:130px">
+          <select id="cq-cat" class="input" style="flex:2;min-width:160px" onchange="window._cqCatChange()">
             <option value="grammatica">📐 Grammatica</option>
             <option value="vocabolario">📚 Vocabolario</option>
             <option value="verbi">🔤 Verbi</option>
@@ -686,6 +681,13 @@ async function showAdmin() {
           </select>
         </div>
 
+        <!-- Tipo: aggiornato dinamicamente da _cqCatChange -->
+        <div id="cq-type-row" style="margin-bottom:14px">
+          <select id="cq-type" class="input" style="width:100%" onchange="window._cqTypeChange()">
+            <option value="quiz">📝 Quiz (scelta multipla)</option>
+          </select>
+        </div>
+
         <!-- Campi quiz (scelta multipla) -->
         <div id="cq-form-quiz">
           <div class="setting-row"><label>Domanda</label><input type="text" id="cq-q-domanda" class="input" placeholder="Testo della domanda..."></div>
@@ -693,31 +695,31 @@ async function showAdmin() {
           <div class="setting-row"><label>Sbagliata 1</label><input type="text" id="cq-q-w1" class="input" placeholder="Risposta sbagliata 1..."></div>
           <div class="setting-row"><label>Sbagliata 2</label><input type="text" id="cq-q-w2" class="input" placeholder="Risposta sbagliata 2..."></div>
           <div class="setting-row"><label>Sbagliata 3</label><input type="text" id="cq-q-w3" class="input" placeholder="Risposta sbagliata 3..."></div>
-          <div class="setting-row"><label>Suggerimento</label><input type="text" id="cq-q-hint" class="input" placeholder="Facoltativo..."></div>
-          <div class="setting-row"><label>Spiegazione</label><input type="text" id="cq-q-spiega" class="input" placeholder="Facoltativa..."></div>
+          <div class="setting-row"><label>Suggerimento <span style="font-weight:400;color:var(--muted)">(facoltativo)</span></label><input type="text" id="cq-q-hint" class="input" placeholder="Es: pensa al soggetto..."></div>
+          <div class="setting-row"><label>Spiegazione <span style="font-weight:400;color:var(--muted)">(facoltativa)</span></label><input type="text" id="cq-q-spiega" class="input" placeholder="Mostrata dopo la risposta..."></div>
         </div>
 
-        <!-- Campi vero/falso -->
+        <!-- Campi vero/falso (solo comprensione) -->
         <div id="cq-form-vf" style="display:none">
-          <div class="setting-row"><label>Affermazione</label><input type="text" id="cq-vf-testo" class="input" placeholder="Scrivi l'affermazione..."></div>
+          <div class="setting-row"><label>Affermazione</label><input type="text" id="cq-vf-testo" class="input" placeholder="Es: Il cane è un animale domestico..."></div>
           <div class="setting-row"><label>È vera?</label>
             <select id="cq-vf-risposta" class="input" style="max-width:160px">
               <option value="Vero">✅ Vero</option>
               <option value="Falso">❌ Falso</option>
             </select>
           </div>
-          <div class="setting-row"><label>Spiegazione</label><input type="text" id="cq-vf-spiega" class="input" placeholder="Facoltativa..."></div>
+          <div class="setting-row"><label>Spiegazione <span style="font-weight:400;color:var(--muted)">(facoltativa)</span></label><input type="text" id="cq-vf-spiega" class="input" placeholder="Mostrata dopo la risposta..."></div>
         </div>
 
-        <!-- Campi abbina coppie -->
+        <!-- Campi abbina coppie (solo vocabolario) -->
         <div id="cq-form-abbina" style="display:none">
-          <div class="setting-row"><label>Titolo esercizio</label><input type="text" id="cq-ab-titolo" class="input" placeholder="Es: Abbina l'aggettivo..."></div>
+          <div class="setting-row"><label>Titolo esercizio</label><input type="text" id="cq-ab-titolo" class="input" placeholder="Es: Abbina la parola al suo contrario..."></div>
           <div id="cq-ab-coppie">
             ${[1,2,3,4].map(i => `
             <div style="display:flex;gap:6px;margin-bottom:6px">
-              <input type="text" id="cq-ab-l${i}" class="input" style="flex:1" placeholder="Sinistra ${i}...">
+              <input type="text" id="cq-ab-l${i}" class="input" style="flex:1" placeholder="Parola ${i}...">
               <span style="align-self:center;font-size:1.2rem">→</span>
-              <input type="text" id="cq-ab-r${i}" class="input" style="flex:1" placeholder="Destra ${i}...">
+              <input type="text" id="cq-ab-r${i}" class="input" style="flex:1" placeholder="Significato / contrario ${i}...">
             </div>`).join('')}
           </div>
           <button class="btn btn-ghost btn-sm" style="margin-bottom:8px" onclick="window._cqAddCoppia()">+ Aggiungi coppia</button>
@@ -803,10 +805,31 @@ window._deleteProfileAdmin = async (id) => { if (confirm('⚠️ Eliminare profi
 // ══════════════════════════════════════
 // CUSTOM QUESTIONS (tab Domande admin)
 // ══════════════════════════════════════
+
+// Tipi disponibili per categoria (solo quelli supportati dal motore di gioco)
+const CQ_TYPES = {
+  grammatica:   [{ v: 'quiz',  l: '📝 Quiz (scelta multipla)' }],
+  vocabolario:  [{ v: 'quiz',  l: '📝 Quiz (scelta multipla)' }, { v: 'abbina', l: '🔗 Abbina coppie' }],
+  verbi:        [{ v: 'quiz',  l: '📝 Quiz (scelta multipla)' }],
+  ortografia:   [{ v: 'quiz',  l: '📝 Quiz (scelta multipla)' }],
+  comprensione: [{ v: 'quiz',  l: '📝 Quiz (scelta multipla)' }, { v: 'vf', l: '✅ Vero / Falso' }],
+  analisi:      [{ v: 'quiz',  l: '📝 Quiz (scelta multipla)' }],
+  produzione:   [{ v: 'quiz',  l: '📝 Quiz (scelta multipla)' }],
+};
+
+window._cqCatChange = () => {
+  const cat = document.getElementById('cq-cat')?.value;
+  const typeSelect = document.getElementById('cq-type');
+  if (!typeSelect) return;
+  const types = CQ_TYPES[cat] || CQ_TYPES.grammatica;
+  typeSelect.innerHTML = types.map(t => `<option value="${t.v}">${t.l}</option>`).join('');
+  window._cqTypeChange(); // aggiorna il form visibile
+};
+
 window._cqTypeChange = () => {
   const t = document.getElementById('cq-type')?.value;
-  document.getElementById('cq-form-quiz').style.display = t === 'quiz' ? '' : 'none';
-  document.getElementById('cq-form-vf').style.display = t === 'vf' ? '' : 'none';
+  document.getElementById('cq-form-quiz').style.display   = t === 'quiz'   ? '' : 'none';
+  document.getElementById('cq-form-vf').style.display     = t === 'vf'     ? '' : 'none';
   document.getElementById('cq-form-abbina').style.display = t === 'abbina' ? '' : 'none';
 };
 

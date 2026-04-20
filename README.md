@@ -8,7 +8,7 @@ App educativa interattiva per imparare l'italiano, pensata per bambini della scu
 - **Sfide online in tempo reale** via Socket.io — crea una stanza, condividi il codice, gioca contro un amico su un altro dispositivo
 - **Multi-profilo**: ogni bambino ha il suo account con XP, livello, badge e progressi separati
 - **Pannello Admin** protetto da PIN con sessioni sicure (token server-side, scadenza 2h)
-- **Domande personalizzate**: aggiungi quiz, vero/falso e abbinamenti direttamente dal pannello admin senza toccare il codice
+- **Domande personalizzate**: aggiungi domande dal pannello admin — i tipi disponibili si adattano alla categoria selezionata (quiz per tutte, vero/falso solo comprensione, abbina coppie solo vocabolario)
 - **Ripetizione spaziata** per ripassare automaticamente gli errori
 - **Accessibilità**: modalità dislessia (font Lexend + spaziatura) e testo grande
 - **Salvataggio server-side** con SQLite (sql.js)
