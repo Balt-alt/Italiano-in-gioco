@@ -131,6 +131,8 @@ export const BADGES = [
   { id: 'x10', nm: 'Genio!', ic: '🧠', ds: '1000 XP', ck: p => p.xp >= 1000 },
   { id: 'l5', nm: 'Livello 5', ic: '⭐', ds: 'Raggiungi lv. 5', ck: p => Math.floor(p.xp / 200) + 1 >= 5 },
   { id: 'l10', nm: 'Livello 10', ic: '👑', ds: 'Raggiungi lv. 10', ck: p => Math.floor(p.xp / 200) + 1 >= 10 },
+  { id: 'cw1', nm: 'Campione di Classe', ic: '🏆', ds: 'Vinto una sfida di classe', ck: p => (p.badges||[]).includes('cw1') },
+  { id: 'cp3', nm: 'Sul Podio', ic: '🥉', ds: 'Top 3 in una sfida di classe', ck: p => (p.badges||[]).includes('cp3') },
 ];
 
 export async function checkBadges(profileId, profile, apiFn) {

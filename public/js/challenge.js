@@ -336,3 +336,248 @@ function _showError(msg) {
   if (el) el.textContent = msg;
   else alert('⚠️ ' + msg);
 }
+
+// ══════════════════════════════════════
+// SFIDA DI CLASSE — lato studente
+// ══════════════════════════════════════
+let _ccProfileId = null;
+let _ccProfile   = null;
+let _ccRender    = null;
+let _ccNavigate  = null;
+let _ccCode      = null;
+let _ccGame      = { questions: [], ci: 0, sc: 0, tot: 0 };
+let _ccListening = false;
+
+export function initClassChallenge(profileId, profile, renderFn, navigateFn) {
+  _ccProfileId = profileId;
+  _ccProfile   = profile;
+  _ccRender    = renderFn;
+  _ccNavigate  = navigateFn;
+}
+
+function _getClassSocket() {
+  const sock = getSocket();
+  if (!_ccListening) {
+    _ccListening = true;
+
+    sock.on('class-joined', ({ code, title, category, difficulty }) => {
+      _ccCode = code;
+      _ccRender(`
+        <button class="nav-back" onclick="window._ccLeave()">← Esci</button>
+        <div class="card" style="max-width:500px;margin:0 auto;text-align:center">
+          <div style="font-size:2.5rem;margin-bottom:8px">🏫</div>
+          <h2 style="margin-bottom:4px">${esc(title)}</h2>
+          <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px">${category} · ${difficulty}</p>
+          <div class="challenge-code-box" style="margin-bottom:16px">
+            <div style="font-size:.76rem;color:var(--muted);margin-bottom:4px">Codice stanza</div>
+            <div style="font-size:2rem;font-weight:900;letter-spacing:8px;color:var(--lav)">${code}</div>
+          </div>
+          <p style="color:var(--muted)">⏳ In attesa che l'insegnante avvii la sfida...</p>
+          <div id="cc-waiting-list" style="margin-top:16px"></div>
+          <div id="cc-error" style="color:var(--coral);font-size:.85rem;margin-top:10px;min-height:18px"></div>
+        </div>`);
+    });
+
+    sock.on('class-room-update', (room) => {
+      const listEl = document.getElementById('cc-waiting-list');
+      if (listEl && room.participants) {
+        listEl.innerHTML = room.participants.map(p => `
+          <div class="cc-participant-row">
+            <span>${p.avatar}</span>
+            <span style="font-weight:700;flex:1;text-align:left">${esc(p.name)}</span>
+            ${room.state === 'playing' ? `<span style="font-weight:800;color:var(--lav)">${p.score}/${room.total}</span>` : ''}
+          </div>`).join('');
+      }
+      const liveEl = document.getElementById('cc-student-live');
+      if (liveEl && room.participants) {
+        liveEl.innerHTML = room.participants
+          .slice().sort((a, b) => b.score - a.score)
+          .map((p, i) => `
+            <div class="cc-participant-row ${p.profileId === _ccProfileId ? 'me' : ''}">
+              <span style="min-width:22px;font-weight:700;color:var(--muted)">${i + 1}.</span>
+              <span>${p.avatar}</span>
+              <span style="flex:1;font-weight:700">${esc(p.name)}</span>
+              <span style="font-weight:800;color:var(--lav)">${p.score}</span>
+              ${p.finished ? '<span style="color:var(--mint);font-size:.75rem">✓</span>' : ''}
+            </div>`).join('');
+      }
+    });
+
+    sock.on('class-started', ({ questions, title, total }) => {
+      _ccGame = { questions, ci: 0, sc: 0, tot: total };
+      _ccShowQuestion();
+    });
+
+    sock.on('class-score-update', (participants) => {
+      const liveEl = document.getElementById('cc-student-live');
+      if (!liveEl || !participants) return;
+      liveEl.innerHTML = participants
+        .slice().sort((a, b) => b.score - a.score)
+        .map((p, i) => `
+          <div class="cc-participant-row ${p.profileId === _ccProfileId ? 'me' : ''}">
+            <span style="min-width:22px;font-weight:700;color:var(--muted)">${i + 1}.</span>
+            <span>${p.avatar}</span>
+            <span style="flex:1;font-weight:700">${esc(p.name)}</span>
+            <span style="font-weight:800;color:var(--lav)">${p.score}</span>
+            ${p.finished ? '<span style="color:var(--mint);font-size:.75rem">✓</span>' : ''}
+          </div>`).join('');
+    });
+
+    sock.on('class-ended', ({ leaderboard, title }) => {
+      _ccShowClassResults(leaderboard, title);
+    });
+
+    sock.on('class-error', (msg) => {
+      const errEl = document.getElementById('cc-error') || document.getElementById('cc-join-error');
+      if (errEl) errEl.textContent = msg;
+      else alert('⚠️ ' + msg);
+    });
+  }
+  return sock;
+}
+
+export function showClassChallengeLobby() {
+  _getClassSocket();
+  _ccCode = null;
+  _ccRender(`
+    <button class="nav-back" onclick="window._navigate('home')">← Menu</button>
+    <div class="card" style="max-width:440px;margin:0 auto;text-align:center">
+      <div style="font-size:3rem;margin-bottom:8px">🏫</div>
+      <h2 style="margin-bottom:4px">Sfida di Classe</h2>
+      <p style="color:var(--muted);font-size:.88rem;margin-bottom:24px">
+        L'insegnante ha creato una sfida — inserisci il codice per entrare
+      </p>
+      <div style="display:flex;gap:8px;align-items:stretch;margin-bottom:12px">
+        <input type="text" id="cc-code-input" class="input"
+          style="flex:1;text-transform:uppercase;letter-spacing:5px;font-size:1.3rem;font-weight:800;text-align:center;min-width:0"
+          placeholder="XXXXXX" maxlength="6"
+          oninput="this.value=this.value.toUpperCase()"
+          onkeydown="if(event.key==='Enter')window._ccEnter()">
+        <button class="btn btn-primary btn-sm" style="flex-shrink:0;align-self:stretch;border-radius:var(--rs)"
+          onclick="window._ccEnter()">Entra →</button>
+      </div>
+      <div id="cc-join-error" style="color:var(--coral);font-size:.85rem;min-height:20px"></div>
+    </div>`);
+}
+
+window._ccEnter = () => {
+  const code = document.getElementById('cc-code-input')?.value.trim().toUpperCase();
+  if (!code || code.length !== 6) {
+    document.getElementById('cc-join-error').textContent = 'Inserisci un codice di 6 caratteri.';
+    return;
+  }
+  document.getElementById('cc-join-error').textContent = '';
+  _getClassSocket().emit('join-class-room', {
+    code,
+    profileId: _ccProfileId,
+    name: _ccProfile?.name || 'Studente',
+    avatar: _ccProfile?.avatar || '🦊'
+  });
+};
+
+window._ccLeave = () => {
+  _ccCode = null;
+  _ccNavigate('home');
+};
+
+function _ccShowQuestion() {
+  const q = _ccGame.questions[_ccGame.ci];
+  if (!q) return;
+  const pct = (_ccGame.ci / _ccGame.tot) * 100;
+  const opts = shuffle([q.a, ...(q.w || []).slice(0, 3)]);
+
+  _ccRender(`
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start">
+      <div class="quiz-area" style="flex:1;min-width:280px">
+        <div class="progress-wrap">
+          <div class="progress-bg"><div class="progress-fill" style="width:${pct}%"></div></div>
+          <span class="progress-text">${_ccGame.ci + 1}/${_ccGame.tot}</span>
+        </div>
+        <div class="category-tag" style="background:rgba(177,151,252,.1);color:var(--lav)">🏫 Sfida di Classe</div>
+        <div class="question-text">${esc(q.q)}</div>
+        <div class="answers-grid">
+          ${opts.map(o =>
+            `<button class="answer-btn"
+              onclick="window._ccAnswer(this,'${escAttr(o)}','${escAttr(q.a)}')"
+            >${esc(o)}</button>`
+          ).join('')}
+        </div>
+        <div id="cc-feedback"></div>
+        <div id="cc-next" style="display:none" class="btn-group">
+          <button class="btn btn-primary" onclick="window._ccNext()">Avanti ➜</button>
+        </div>
+      </div>
+      <div class="class-live-board" style="min-width:180px;flex:0 0 180px">
+        <div style="font-weight:700;font-size:.85rem;margin-bottom:8px;color:var(--muted)">📊 Classifica Live</div>
+        <div id="cc-student-live"></div>
+      </div>
+    </div>`);
+}
+
+window._ccAnswer = (btn, sel, correct) => {
+  document.querySelectorAll('.answer-btn').forEach(b => { b.disabled = true; });
+  const ok = sel === correct;
+  btn.classList.add(ok ? 'correct' : 'wrong');
+  if (!ok) {
+    document.querySelectorAll('.answer-btn').forEach(b => {
+      if (b.textContent.trim() === correct) b.classList.add('correct');
+    });
+  }
+  if (ok) _ccGame.sc++;
+  document.getElementById('cc-feedback').innerHTML =
+    `<div class="feedback ${ok ? 'ok' : 'no'}">${ok ? '✅ Esatto!' : `❌ Era: <strong>${esc(correct)}</strong>`}</div>`;
+  document.getElementById('cc-next').style.display = 'flex';
+  _getClassSocket().emit('submit-class-answer', { code: _ccCode, correct: ok });
+};
+
+window._ccNext = () => {
+  _ccGame.ci++;
+  if (_ccGame.ci >= _ccGame.tot) {
+    _ccRender(`
+      <div class="quiz-area" style="text-align:center">
+        <div style="font-size:3.5rem;margin:48px 0 16px">⏳</div>
+        <h3>Hai finito!</h3>
+        <p style="color:var(--muted);margin-top:8px">In attesa che tutti completino...</p>
+        <div style="margin-top:24px;font-size:1.5rem;font-weight:900;color:var(--lav)">
+          ${_ccGame.sc} / ${_ccGame.tot}
+        </div>
+      </div>`);
+  } else {
+    _ccShowQuestion();
+  }
+};
+
+function _ccShowClassResults(leaderboard, title) {
+  const myEntry = leaderboard.find(e => e.profileId === _ccProfileId);
+  const isFirst = myEntry?.rank === 1;
+  const medals  = ['🥇', '🥈', '🥉'];
+
+  _ccRender(`
+    <div id="confetti-box" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999"></div>
+    <div class="card" style="max-width:520px;margin:0 auto;text-align:center">
+      <div style="font-size:3rem;margin-bottom:6px">🏫</div>
+      <h2 style="margin-bottom:2px">Sfida Terminata!</h2>
+      <p style="color:var(--muted);font-size:.85rem;margin-bottom:20px">${esc(title)}</p>
+      <div class="class-podium">
+        ${leaderboard.map(e => `
+          <div class="cc-participant-row ${e.profileId === _ccProfileId ? 'me' : ''}" style="padding:10px 14px">
+            <span style="font-size:1.4rem;min-width:32px">${medals[e.rank - 1] || e.rank + '.'}</span>
+            <span style="font-size:1.2rem">${e.avatar}</span>
+            <span style="font-weight:700;flex:1;text-align:left">${esc(e.name)}</span>
+            <span style="font-weight:900;color:var(--lav)">${e.score}/${e.total}</span>
+            <span style="font-size:.78rem;color:var(--muted);min-width:38px">${e.pct}%</span>
+          </div>`).join('')}
+      </div>
+      ${myEntry ? `<p style="margin-top:14px;font-weight:700;color:var(--mint)">
+        Sei arrivato/a ${myEntry.rank === 1 ? '🥇 PRIMO/A' : myEntry.rank === 2 ? '🥈 secondo/a' : myEntry.rank === 3 ? '🥉 terzo/a' : myEntry.rank + 'º'}!
+        Punteggio: ${myEntry.score}/${myEntry.total}</p>` : ''}
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="window._navigate('home')">🏠 Menu</button>
+        <button class="btn btn-ghost" onclick="showClassChallengeLobby()">🏫 Altra Sfida</button>
+      </div>
+    </div>`);
+
+  if (isFirst) {
+    import('./utils.js').then(({ launchConfetti }) => launchConfetti());
+  }
+}

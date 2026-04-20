@@ -54,6 +54,18 @@ async function init() {
     scheduleSave();
   }
 
+  // class_challenge_results — nuova tabella per sfide di classe
+  db.run(`CREATE TABLE IF NOT EXISTS class_challenge_results (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    challenge_code TEXT NOT NULL,
+    profile_id TEXT NOT NULL,
+    score INTEGER DEFAULT 0,
+    total INTEGER DEFAULT 0,
+    rank INTEGER DEFAULT 0,
+    title TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now'))
+  )`);
+
   const existingPin = get("SELECT value FROM settings WHERE key=?", ['admin_pin']);
   if (!existingPin) {
     // Primo avvio: genera PIN casuale a 6 cifre
@@ -180,4 +192,9 @@ const importAll = (data) => {
 
 const getAdminStats = () => getProfiles().map(p => ({ ...getProfile(p.id), errorsByCategory: all("SELECT category, COUNT(*) as count FROM error_log WHERE profile_id=? GROUP BY category", [p.id]) }));
 
-module.exports = { init, verifyPin, setAdminPin, getSetting, setSetting, getProfiles, getProfile, createProfile, updateProfile, deleteProfile, saveGameResult, logError, getErrors, getAllErrors, clearErrors, getDueReviews, updateReview, addBadge, updateStreak, getCustomQuestions, addCustomQuestion, deleteCustomQuestion, getCustomContent, getAllCustomContent, addCustomContent, deleteCustomContent, exportAll, importAll, getAdminStats, getTodayChallenge, completeDailyChallenge };
+const saveClassResult = (code, profileId, score, total, rank, title) =>
+  run("INSERT INTO class_challenge_results (challenge_code,profile_id,score,total,rank,title) VALUES (?,?,?,?,?,?)", [code, profileId, score, total, rank, title || '']);
+const getClassResults = (profileId) =>
+  all("SELECT * FROM class_challenge_results WHERE profile_id=? ORDER BY created_at DESC LIMIT 20", [profileId]);
+
+module.exports = { init, verifyPin, setAdminPin, getSetting, setSetting, getProfiles, getProfile, createProfile, updateProfile, deleteProfile, saveGameResult, logError, getErrors, getAllErrors, clearErrors, getDueReviews, updateReview, addBadge, updateStreak, getCustomQuestions, addCustomQuestion, deleteCustomQuestion, getCustomContent, getAllCustomContent, addCustomContent, deleteCustomContent, exportAll, importAll, getAdminStats, getTodayChallenge, completeDailyChallenge, saveClassResult, getClassResults, run };

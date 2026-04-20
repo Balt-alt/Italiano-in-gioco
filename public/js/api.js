@@ -114,4 +114,10 @@ export const api = {
     setAdminToken(null);
     return result;
   },
+
+  // Sfida di Classe
+  createClassChallenge: (data) => request('/admin/class-challenge', { method: 'POST', body: data }),
+  getClassChallenge: (code) => request(`/admin/class-challenge/${code}`),
+  deleteClassChallenge: (code) => request(`/admin/class-challenge/${code}`, { method: 'DELETE' }),
+  getClassResults: (profileId) => request(`/profiles/${profileId}/class-results`),
 };

@@ -2,11 +2,12 @@
 // APP CONTROLLER - Router e schermate
 // ══════════════════════════════════════
 import { api } from './api.js';
-import { esc, escAttr, genId, AVATARS, AVATAR_COLORS, CATS, BADGES } from './utils.js';
+import { esc, escAttr, genId, shuffle as _shuffle, AVATARS, AVATAR_COLORS, CATS, BADGES } from './utils.js';
 import { initGames, startGame, startReview, startChallenge, refreshProfile } from './games.js';
 import { defaultConfig, renderAvatar, renderAvatarBuilder, avatarHTML } from './avatar.js';
 import { LESSONS } from './lessons.js';
-import { initOnlineChallenge, showOnlineLobby } from './challenge.js';
+import { initOnlineChallenge, showOnlineLobby, initClassChallenge, showClassChallengeLobby } from './challenge.js';
+import * as Q from './questions.js';
 import { initDaily, showDailyChallenge } from './daily.js';
 import { initGlossary, showGlossary } from './glossary.js';
 import { initMinigames, showMinigames } from './minigames.js';
@@ -47,7 +48,8 @@ function navigate(screen, param) {
     case 'badges':     showBadges(); break;
     case 'custom':     showCustomQ(); break;
     case 'admin':      showAdmin(); break;
-    case 'challenge':  showOnlineLobby(); break;
+    case 'challenge':       showOnlineLobby(); break;
+    case 'class-challenge': showClassChallengeLobby(); break;
     case 'daily':      showDailyChallenge(); break;
     case 'glossary':   showGlossary(); break;
     case 'minigames':  showMinigames(); break;
@@ -90,6 +92,7 @@ window._selectProfile = async (id) => {
   currentProfile = await api.getProfile(id);
   initGames(id, currentProfile, navigate);
   initOnlineChallenge(id, currentProfile, render, navigate);
+  initClassChallenge(id, currentProfile, render, navigate);
   initDaily(id, render, navigate);
   initGlossary(render, navigate);
   initMinigames(render, navigate);
@@ -311,6 +314,14 @@ window._showChallenge = () => {
           <div style="text-align:left">
             <div style="font-weight:800">Sfida Locale</div>
             <div style="font-size:.8rem;font-weight:400;opacity:.85">Stesso dispositivo, a turni — serve un altro profilo</div>
+          </div>
+        </button>
+        <button class="btn btn-ghost" style="padding:18px;font-size:1rem;justify-content:flex-start;gap:14px"
+          onclick="window._navigate('class-challenge')">
+          <span style="font-size:1.6rem">🏫</span>
+          <div style="text-align:left">
+            <div style="font-weight:800">Sfida di Classe</div>
+            <div style="font-size:.8rem;font-weight:400;opacity:.85">Entra nella sfida creata dall'insegnante con il codice</div>
           </div>
         </button>
       </div>
@@ -624,6 +635,7 @@ async function showAdmin() {
       <button class="admin-tab" onclick="window._switchTab('progress',this)">📊 Progressi</button>
       <button class="admin-tab" onclick="window._switchTab('domande',this)">✏️ Domande</button>
       <button class="admin-tab" onclick="window._switchTab('manage',this)">⚙️ Gestione</button>
+      <button class="admin-tab" onclick="window._switchTab('classChallenge',this)">🏫 Sfida</button>
     </div>
 
     <div class="admin-panel active" id="panel-overview">
@@ -818,6 +830,63 @@ async function showAdmin() {
                 <button class="btn btn-coral btn-sm" onclick="window._cqDelete(${item.id})">🗑️</button>
               </div>`;
             }).join('')}
+      </div>
+    </div>
+
+    <div class="admin-panel" id="panel-classChallenge">
+      <div class="card" style="margin-bottom:14px">
+        <h3 style="margin-bottom:14px">🏫 Crea Sfida di Classe</h3>
+        <div class="setting-row">
+          <label>📌 Titolo</label>
+          <input type="text" id="cc-title" class="input" placeholder="Es: Prova di Grammatica" maxlength="60">
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+          <select id="cc-cat" class="input" style="flex:2;min-width:160px">
+            ${CATS.map(c => `<option value="${c.id}">${c.ic} ${c.nm}</option>`).join('')}
+          </select>
+          <select id="cc-diff" class="input" style="flex:1;min-width:110px">
+            <option value="facile">🟢 Facile</option>
+            <option value="medio">🟡 Medio</option>
+            <option value="difficile">🔴 Difficile</option>
+          </select>
+          <select id="cc-count" class="input" style="flex:1;min-width:100px">
+            <option value="5">5 domande</option>
+            <option value="10" selected>10 domande</option>
+            <option value="15">15 domande</option>
+            <option value="20">20 domande</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="window._createClassChallenge()">🎲 Crea Stanza</button>
+        <div id="cc-create-error" style="color:var(--coral);font-size:.85rem;margin-top:8px;min-height:18px"></div>
+      </div>
+
+      <div class="card" id="cc-room-section" style="display:none;margin-bottom:14px">
+        <div style="text-align:center">
+          <p style="color:var(--muted);font-size:.82rem;margin-bottom:8px">Scrivi questo codice alla lavagna per gli alunni</p>
+          <div class="class-code-display" id="cc-code-display">——————</div>
+        </div>
+        <div style="margin:14px 0">
+          <div style="font-weight:700;font-size:.88rem;margin-bottom:8px;color:var(--muted)">👥 Partecipanti</div>
+          <div id="cc-participants" style="min-height:40px"></div>
+        </div>
+        <div class="btn-group" style="justify-content:flex-start;flex-wrap:wrap">
+          <button class="btn btn-primary" id="cc-start-btn" onclick="window._startClassChallenge()">▶ Avvia Sfida</button>
+          <button class="btn btn-coral" id="cc-end-btn" style="display:none" onclick="window._endClassChallenge()">⏹ Termina Sfida</button>
+          <button class="btn btn-ghost" onclick="window._closeClassRoom()">🗑 Chiudi Stanza</button>
+        </div>
+      </div>
+
+      <div class="card" id="cc-live-board" style="display:none;margin-bottom:14px">
+        <h4 style="margin-bottom:10px">📊 Classifica Live</h4>
+        <div id="cc-live-list"></div>
+      </div>
+
+      <div class="card" id="cc-results" style="display:none">
+        <h4 style="margin-bottom:10px">🏆 Risultati Finali</h4>
+        <div id="cc-results-list"></div>
+        <div class="btn-group" style="justify-content:flex-start;margin-top:14px">
+          <button class="btn btn-ghost btn-sm" onclick="window._resetClassChallenge()">🔄 Nuova Sfida</button>
+        </div>
       </div>
     </div>
 
@@ -1061,6 +1130,166 @@ window._aiSaveSelected = async () => {
   }
   alert(`✅ ${saved} domanda/e salvate!`);
   showAdmin();
+};
+
+// ══════════════════════════════════════
+// SFIDA DI CLASSE — Admin
+// ══════════════════════════════════════
+
+// Mappa categoria → banca domande
+const _ccBankMap = {
+  grammatica:   'gramQuiz',
+  vocabolario:  'vocabQuiz',
+  verbi:        'verbiQuiz',
+  ortografia:   'ortoQuiz',
+  comprensione: 'compSignificato',
+  analisi:      'analisiQuiz',
+  produzione:   'prodRegistro',
+};
+
+let _adminCcCode   = null;
+let _adminCcSocket = null;
+let _adminCcListening = false;
+
+function _getAdminClassSocket() {
+  if (!_adminCcSocket || !_adminCcSocket.connected) {
+    _adminCcSocket = window.io({ autoConnect: true, reconnectionAttempts: 5 });
+  }
+  if (!_adminCcListening) {
+    _adminCcListening = true;
+
+    _adminCcSocket.on('class-room-update', (room) => {
+      // Aggiorna lista partecipanti
+      const partEl = document.getElementById('cc-participants');
+      if (partEl) {
+        partEl.innerHTML = room.participants.length === 0
+          ? '<p style="color:var(--muted);font-size:.85rem">Nessun alunno ancora...</p>'
+          : room.participants.map(p => `
+            <div class="cc-participant-row">
+              <span>${p.avatar}</span>
+              <span style="font-weight:700;flex:1">${esc(p.name)}</span>
+              ${room.state === 'playing' ? `<span style="font-weight:800;color:var(--lav)">${p.score}/${room.total}</span>` : ''}
+              ${p.finished ? '<span style="color:var(--mint);font-size:.8rem">✓</span>' : ''}
+            </div>`).join('');
+      }
+      // Aggiorna live board
+      const liveEl = document.getElementById('cc-live-list');
+      if (liveEl && room.state === 'playing') {
+        document.getElementById('cc-live-board').style.display = '';
+        liveEl.innerHTML = room.participants
+          .slice().sort((a, b) => b.score - a.score)
+          .map((p, i) => `
+            <div class="cc-participant-row">
+              <span style="min-width:24px;font-weight:700;color:var(--muted)">${i + 1}.</span>
+              <span>${p.avatar}</span>
+              <span style="flex:1;font-weight:700">${esc(p.name)}</span>
+              <span style="font-weight:900;color:var(--lav)">${p.score}/${room.total}</span>
+              ${p.finished ? '<span style="color:var(--mint);font-size:.8rem">✓</span>' : ''}
+            </div>`).join('');
+      }
+    });
+
+    _adminCcSocket.on('class-ended', ({ leaderboard, title }) => {
+      const medals = ['🥇', '🥈', '🥉'];
+      const resultsEl = document.getElementById('cc-results');
+      const listEl   = document.getElementById('cc-results-list');
+      if (resultsEl && listEl) {
+        resultsEl.style.display = '';
+        listEl.innerHTML = leaderboard.map(e => `
+          <div class="cc-participant-row" style="padding:10px 14px">
+            <span style="font-size:1.3rem;min-width:30px">${medals[e.rank - 1] || e.rank + '.'}</span>
+            <span style="font-size:1.1rem">${e.avatar}</span>
+            <span style="font-weight:700;flex:1">${esc(e.name)}</span>
+            <span style="font-weight:900;color:var(--lav)">${e.score}/${e.total}</span>
+            <span style="color:var(--muted);font-size:.8rem">${e.pct}%</span>
+          </div>`).join('');
+      }
+      // nascondi btn fine, mostra risultati
+      const endBtn  = document.getElementById('cc-end-btn');
+      const startBtn = document.getElementById('cc-start-btn');
+      if (endBtn) endBtn.style.display = 'none';
+      if (startBtn) startBtn.style.display = '';
+    });
+
+    _adminCcSocket.on('class-error', (msg) => {
+      const errEl = document.getElementById('cc-create-error');
+      if (errEl) errEl.textContent = msg;
+    });
+  }
+  return _adminCcSocket;
+}
+
+window._createClassChallenge = async () => {
+  const title = document.getElementById('cc-title')?.value.trim() || 'Sfida di Classe';
+  const cat   = document.getElementById('cc-cat')?.value || 'grammatica';
+  const diff  = document.getElementById('cc-diff')?.value || 'facile';
+  const count = parseInt(document.getElementById('cc-count')?.value) || 10;
+  const errEl = document.getElementById('cc-create-error');
+  if (errEl) errEl.textContent = '';
+
+  // Recupera domande dalla banca
+  const bankName = _ccBankMap[cat] || 'gramQuiz';
+  const bank = Q[bankName];
+  const pool = bank ? (bank[diff] || bank.facile || []) : [];
+  const questions = _shuffle([...pool]).slice(0, count).map(q => ({ q: q.q, a: q.a, w: (q.w || []).slice(0, 3) }));
+
+  if (questions.length === 0) {
+    if (errEl) errEl.textContent = 'Nessuna domanda disponibile per questa selezione.';
+    return;
+  }
+
+  try {
+    const { code } = await api.createClassChallenge({ title, questions, category: cat, difficulty: diff });
+    _adminCcCode = code;
+
+    // Mostra sezione stanza
+    document.getElementById('cc-room-section').style.display = '';
+    document.getElementById('cc-code-display').textContent = code;
+    document.getElementById('cc-results').style.display = 'none';
+    document.getElementById('cc-live-board').style.display = 'none';
+    document.getElementById('cc-start-btn').style.display = '';
+    document.getElementById('cc-end-btn').style.display = 'none';
+
+    // Connetti socket admin
+    const sock = _getAdminClassSocket();
+    const adminToken = sessionStorage.getItem('adminToken');
+    sock.emit('admin-join-class', { code, adminToken });
+  } catch(e) {
+    if (errEl) errEl.textContent = 'Errore: ' + e.message;
+  }
+};
+
+window._startClassChallenge = () => {
+  if (!_adminCcCode) return;
+  const adminToken = sessionStorage.getItem('adminToken');
+  _getAdminClassSocket().emit('start-class-challenge', { code: _adminCcCode, adminToken });
+  document.getElementById('cc-start-btn').style.display = 'none';
+  document.getElementById('cc-end-btn').style.display = '';
+};
+
+window._endClassChallenge = () => {
+  if (!_adminCcCode) return;
+  const adminToken = sessionStorage.getItem('adminToken');
+  _getAdminClassSocket().emit('end-class-challenge', { code: _adminCcCode, adminToken });
+  document.getElementById('cc-end-btn').style.display = 'none';
+};
+
+window._closeClassRoom = async () => {
+  if (!_adminCcCode) return;
+  try {
+    await api.deleteClassChallenge(_adminCcCode);
+  } catch(_) {}
+  _adminCcCode = null;
+  document.getElementById('cc-room-section').style.display = 'none';
+  document.getElementById('cc-live-board').style.display = 'none';
+  document.getElementById('cc-results').style.display = 'none';
+};
+
+window._resetClassChallenge = () => {
+  _adminCcCode = null;
+  document.getElementById('cc-room-section').style.display = 'none';
+  document.getElementById('cc-live-board').style.display = 'none';
+  document.getElementById('cc-results').style.display = 'none';
 };
 
 // ══════════════════════════════════════

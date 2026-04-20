@@ -391,6 +391,41 @@ app.post('/api/backup/import', requireAdmin, (req, res) => {
   }
 });
 
+// ── Sfida di Classe — REST ──
+app.post('/api/admin/class-challenge', requireAdmin, (req, res) => {
+  const { title, questions, category, difficulty } = req.body;
+  if (!Array.isArray(questions) || questions.length === 0)
+    return res.status(400).json({ error: 'Fornire almeno una domanda' });
+  if (questions.length > 50)
+    return res.status(400).json({ error: 'Massimo 50 domande per sfida' });
+  const code = genClassCode();
+  classRooms.set(code, {
+    code, title: (title || 'Sfida di Classe').substring(0, 60),
+    category: category || 'misto', difficulty: difficulty || 'facile',
+    questions, state: 'waiting',
+    participants: new Map(),
+    createdAt: Date.now()
+  });
+  res.json({ code });
+});
+
+app.get('/api/admin/class-challenge/:code', requireAdmin, (req, res) => {
+  const room = classRooms.get(req.params.code.toUpperCase());
+  if (!room) return res.status(404).json({ error: 'Stanza non trovata' });
+  res.json(classRoomPublic(room));
+});
+
+app.delete('/api/admin/class-challenge/:code', requireAdmin, (req, res) => {
+  const code = req.params.code.toUpperCase();
+  const room = classRooms.get(code);
+  if (room) { io.to(code).emit('class-error', 'La sfida è stata chiusa dall\'insegnante.'); classRooms.delete(code); }
+  res.json({ ok: true });
+});
+
+app.get('/api/profiles/:id/class-results', (req, res) => {
+  res.json(db.getClassResults(req.params.id));
+});
+
 // ── Global error handler ──
 app.use((err, req, res, next) => {
   console.error('Server error:', err.message);
@@ -410,12 +445,68 @@ app.get('*', (req, res) => {
 // ══════════════════════════════════════
 const rooms = new Map(); // code → { code, host, players:[{id,profileId,name,score,finished,answeredCount}], questions, status, cat, difficulty, createdAt }
 
+// ── Sfide di Classe (admin-driven) ──
+const classRooms = new Map(); // code → room
+
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O/1/I/L
 function genRoomCode() {
   let code;
   do { code = Array.from({ length: 4 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join(''); }
   while (rooms.has(code));
   return code;
+}
+
+function genClassCode() {
+  let code;
+  do {
+    code = Array.from({ length: 6 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
+  } while (classRooms.has(code) || rooms.has(code));
+  return code;
+}
+
+function classRoomPublic(room) {
+  return {
+    code: room.code,
+    title: room.title,
+    category: room.category,
+    difficulty: room.difficulty,
+    state: room.state,
+    total: room.questions.length,
+    participants: [...room.participants.values()].map(p => ({
+      name: p.name, avatar: p.avatar, score: p.score,
+      finished: p.finished, profileId: p.profileId
+    }))
+  };
+}
+
+async function endClassChallenge(code) {
+  const room = classRooms.get(code);
+  if (!room || room.state === 'finished') return;
+  room.state = 'finished';
+  const sorted = [...room.participants.values()]
+    .filter(p => p.profileId) // solo alunni con profilo
+    .sort((a, b) => b.score - a.score || a.finishedAt - b.finishedAt); // pareggio: chi ha finito prima
+  const total = room.questions.length;
+  const leaderboard = sorted.map((p, i) => ({
+    rank: i + 1,
+    name: p.name,
+    avatar: p.avatar,
+    score: p.score,
+    total,
+    pct: total > 0 ? Math.round((p.score / total) * 100) : 0,
+    profileId: p.profileId
+  }));
+  // Salva risultati + XP + badge
+  for (const entry of leaderboard) {
+    db.saveClassResult(code, entry.profileId, entry.score, total, entry.rank, room.title);
+    const xp = 15 + entry.score * 8 + (entry.rank === 1 && leaderboard.length > 1 ? 50 : 0);
+    db.run("UPDATE profiles SET xp=xp+? WHERE id=?", [xp, entry.profileId]);
+    if (entry.rank === 1 && leaderboard.length > 1) db.addBadge(entry.profileId, 'cw1');
+    if (entry.rank <= 3 && leaderboard.length >= 3) db.addBadge(entry.profileId, 'cp3');
+  }
+  io.to(code).emit('class-ended', { leaderboard, title: room.title });
+  io.to('admin-' + code).emit('class-ended', { leaderboard, title: room.title });
+  setTimeout(() => classRooms.delete(code), 15 * 60 * 1000);
 }
 
 // Pulizia stanze vecchie ogni 30 minuti
@@ -519,6 +610,73 @@ io.on('connection', (socket) => {
       });
       setTimeout(() => rooms.delete(code), 60 * 1000);
     }
+  });
+
+  // ── Sfida di Classe — Socket ──
+  socket.on('admin-join-class', ({ code, adminToken }) => {
+    code = (code || '').toUpperCase();
+    const expiry = adminSessions.get(adminToken);
+    if (!expiry || Date.now() > expiry) return socket.emit('class-error', 'Token admin scaduto');
+    const room = classRooms.get(code);
+    if (!room) return socket.emit('class-error', 'Stanza non trovata');
+    socket.join('admin-' + code);
+    socket.emit('class-room-update', classRoomPublic(room));
+  });
+
+  socket.on('join-class-room', ({ code, profileId, name, avatar }) => {
+    code = (code || '').toUpperCase().trim();
+    const room = classRooms.get(code);
+    if (!room) return socket.emit('class-error', 'Codice non valido. Chiedi il codice al tuo insegnante.');
+    if (room.state === 'finished') return socket.emit('class-error', 'Questa sfida è già terminata.');
+    if (room.state === 'playing') return socket.emit('class-error', 'La sfida è già iniziata, aspetta la prossima.');
+    // rimuovi eventuale duplicato (riconnessione)
+    for (const [sid, p] of room.participants) {
+      if (p.profileId === profileId) { socket.leave(sid); room.participants.delete(sid); break; }
+    }
+    room.participants.set(socket.id, { profileId, name, avatar: avatar || '🦊', score: 0, finished: false, answeredCount: 0, finishedAt: 0 });
+    socket.join(code);
+    socket.emit('class-joined', { code, title: room.title, category: room.category, difficulty: room.difficulty });
+    const pub = classRoomPublic(room);
+    io.to(code).emit('class-room-update', pub);
+    io.to('admin-' + code).emit('class-room-update', pub);
+  });
+
+  socket.on('start-class-challenge', ({ code, adminToken }) => {
+    code = (code || '').toUpperCase();
+    const expiry = adminSessions.get(adminToken);
+    if (!expiry || Date.now() > expiry) return socket.emit('class-error', 'Token admin scaduto');
+    const room = classRooms.get(code);
+    if (!room) return socket.emit('class-error', 'Stanza non trovata');
+    if (room.state !== 'waiting') return;
+    if (room.participants.size === 0) return socket.emit('class-error', 'Nessun alunno nella stanza.');
+    room.state = 'playing';
+    io.to(code).emit('class-started', { questions: room.questions, title: room.title, total: room.questions.length });
+    io.to('admin-' + code).emit('class-room-update', classRoomPublic(room));
+  });
+
+  socket.on('submit-class-answer', ({ code, correct }) => {
+    code = (code || '').toUpperCase();
+    const room = classRooms.get(code);
+    if (!room || room.state !== 'playing') return;
+    const player = room.participants.get(socket.id);
+    if (!player || player.finished) return;
+    if (correct) player.score++;
+    player.answeredCount++;
+    if (player.answeredCount >= room.questions.length) {
+      player.finished = true;
+      player.finishedAt = Date.now();
+    }
+    const pub = classRoomPublic(room);
+    io.to('admin-' + code).emit('class-room-update', pub);
+    io.to(code).emit('class-score-update', pub.participants);
+    if ([...room.participants.values()].every(p => p.finished)) endClassChallenge(code);
+  });
+
+  socket.on('end-class-challenge', ({ code, adminToken }) => {
+    code = (code || '').toUpperCase();
+    const expiry = adminSessions.get(adminToken);
+    if (!expiry || Date.now() > expiry) return;
+    endClassChallenge(code);
   });
 
   socket.on('leave-room', ({ code }) => leaveCurrentRoom());

@@ -408,3 +408,54 @@ h1, h2, h3 { font-family: var(--fd); }
   transition: background .2s;
 }
 .challenge-code-box:hover { background: rgba(177,151,252,.14); }
+
+/* ── Sfida di Classe ── */
+.class-code-display {
+  font-size: 3rem;
+  font-weight: 900;
+  letter-spacing: 10px;
+  color: var(--lav);
+  background: rgba(177,151,252,.08);
+  border: 3px dashed var(--lav);
+  border-radius: 16px;
+  padding: 18px 24px;
+  display: inline-block;
+  margin: 10px auto;
+  font-family: var(--fd);
+}
+
+.class-podium {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.cc-participant-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(177,151,252,.05);
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  font-size: .9rem;
+  transition: background .15s;
+}
+.cc-participant-row.me {
+  background: rgba(177,151,252,.14);
+  border-color: var(--lav);
+  font-weight: 800;
+}
+
+.class-live-board {
+  background: var(--card);
+  border-radius: var(--rs);
+  padding: 14px;
+  box-shadow: var(--sh);
+  border: 2px solid var(--border);
+}
+
+@media (max-width: 600px) {
+  .class-live-board { flex: 1 1 100% !important; min-width: 0 !important; }
+}
