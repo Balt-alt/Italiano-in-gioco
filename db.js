@@ -46,6 +46,14 @@ async function init() {
     CREATE TABLE IF NOT EXISTS daily_challenges (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id TEXT NOT NULL, date TEXT NOT NULL, score INTEGER DEFAULT 0, total INTEGER DEFAULT 5, xp_earned INTEGER DEFAULT 0, completed_at TEXT DEFAULT (datetime('now')), UNIQUE(profile_id, date));
   `);
 
+  // Migrazioni colonne mancanti su DB esistenti
+  const profileCols = all("PRAGMA table_info(profiles)").map(c => c.name);
+  if (!profileCols.includes('uppercase_text')) {
+    db.run("ALTER TABLE profiles ADD COLUMN uppercase_text INTEGER DEFAULT 0");
+    console.log('  🔄 Migrazione: aggiunta colonna uppercase_text ai profili');
+    scheduleSave();
+  }
+
   const existingPin = get("SELECT value FROM settings WHERE key=?", ['admin_pin']);
   if (!existingPin) {
     // Primo avvio: genera PIN casuale a 6 cifre
