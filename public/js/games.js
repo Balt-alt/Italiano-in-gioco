@@ -643,11 +643,16 @@ function showTrasforma() {
       <div class="question-context"><strong>Frase:</strong> ${esc(q.frase)}<br><strong>Trasforma al:</strong> ${esc(q.tempo)}</div>
       <div class="answers-grid single-col">${opts.map(o => `<button class="answer-btn" style="text-align:left" onclick="window._checkAnswer(this,'${escAttr(o)}','${escAttr(q.a)}')">${esc(o)}</button>`).join('')}</div>
       <div id="feedback-box"></div>
-      <div id="next-box" style="display:none" class="btn-group"><button class="btn btn-primary" onclick="window._nextQuestion()">Avanti ➜</button></div>
+      <div id="next-box" style="display:none" class="btn-group"><button class="btn btn-primary" onclick="window._nextTrasforma()">Avanti ➜</button></div>
     </div>`);
 
   window._checkAnswer = (btn, sel, correct) => checkMultipleAnswer(btn, sel, correct, { ...q, w: [] });
 }
+
+window._nextTrasforma = () => {
+  game.ci++;
+  if (game.ci >= game.tot) endGame(); else showTrasforma();
+};
 
 // ══════════════════════════════════════
 // TROVA L'ERRORE (Ortografia)
