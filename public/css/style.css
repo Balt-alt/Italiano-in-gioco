@@ -378,6 +378,9 @@ h1, h2, h3 { font-family: var(--fd); }
 }
 
 /* ── Sfide Online ── */
+/* ── Essere o Avere — bottoni risposta 2 col ── */
+.ea-btn { font-size: 1.05rem; font-weight: 700; min-height: 54px; letter-spacing: .02em; }
+
 /* ── Mini Giochi ── */
 .mg-tile {
   display: flex;

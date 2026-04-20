@@ -357,6 +357,78 @@ export const verbiConiuga = {
   ]
 };
 
+// ── Verbi: Essere e Avere ──
+// Ogni domanda: frase con ___ da completare, risposta corretta, 4 opzioni,
+// suggerimento e spiegazione. tipo = 'presente' | 'ausiliare' | 'idioma'
+export const verbiEssereAvere = {
+  facile: [
+    { frase:"Io ___ felice oggi!", a:"sono", opts:["sono","ho","sei","hai"],
+      h:"Essere, 1ª persona", x:"'Essere' al presente: io SONO, tu sei, lui è...", tipo:"presente" },
+    { frase:"Tu ___ un bel cappello!", a:"hai", opts:["hai","sei","hanno","siete"],
+      h:"Avere, 2ª persona", x:"'Avere' al presente: io ho, tu HAI, lui ha...", tipo:"presente" },
+    { frase:"Luca ___ molto stanco.", a:"è", opts:["è","ha","sono","ho"],
+      h:"Essere, 3ª persona sing.", x:"Lui/lei È: 3ª persona singolare di essere.", tipo:"presente" },
+    { frase:"Mia sorella ___ sette anni.", a:"ha", opts:["ha","è","hanno","sei"],
+      h:"Avere, 3ª persona", x:"L'età si esprime con AVERE: lei HA sette anni.", tipo:"presente" },
+    { frase:"Noi ___ a scuola ogni giorno.", a:"siamo", opts:["siamo","abbiamo","sono","ho"],
+      h:"Essere, 1ª plur.", x:"Noi SIAMO: 1ª persona plurale di essere.", tipo:"presente" },
+    { frase:"Voi ___ tanta fame!", a:"avete", opts:["avete","siete","hanno","sono"],
+      h:"Avere, 2ª plur.", x:"Voi AVETE: 2ª persona plurale di avere.", tipo:"presente" },
+    { frase:"I bambini ___ felicissimi.", a:"sono", opts:["sono","hanno","siamo","avete"],
+      h:"Essere, 3ª plur.", x:"Loro SONO: 3ª persona plurale di essere.", tipo:"presente" },
+    { frase:"Io ___ un cane e un gatto.", a:"ho", opts:["ho","sono","hai","siamo"],
+      h:"Avere, 1ª persona", x:"'Avere' al presente: io HO.", tipo:"presente" },
+    { frase:"La maestra ___ molto gentile.", a:"è", opts:["è","ha","sei","hai"],
+      h:"Essere, 3ª sing.", x:"Lei È gentile: aggettivo → verbo essere.", tipo:"presente" },
+    { frase:"Tu ___ ragione, non io!", a:"hai", opts:["hai","sei","ho","sono"],
+      h:"Avere ragione = espressione fissa", x:"'Avere ragione' è un'espressione idiomatica: si usa AVERE.", tipo:"idioma" },
+  ],
+  medio: [
+    { frase:"Ieri io ___ andato al parco.", a:"sono", opts:["sono","ho","sei","hai"],
+      h:"Ausiliare di 'andare'", x:"Andare è un verbo di moto intransitivo → vuole ESSERE.", tipo:"ausiliare" },
+    { frase:"Stamattina noi ___ fatto colazione insieme.", a:"abbiamo", opts:["abbiamo","siamo","hanno","sono"],
+      h:"Ausiliare di 'fare'", x:"Fare è transitivo → vuole AVERE: abbiamo fatto.", tipo:"ausiliare" },
+    { frase:"Carlo ___ arrivato tardi ieri.", a:"è", opts:["è","ha","sono","hanno"],
+      h:"Ausiliare di 'arrivare'", x:"Arrivare (verbo di stato/moto) → usa ESSERE.", tipo:"ausiliare" },
+    { frase:"Le bambine ___ disegnato un arcobaleno.", a:"hanno", opts:["hanno","sono","ha","è"],
+      h:"Ausiliare di 'disegnare'", x:"Disegnare è transitivo → usa AVERE.", tipo:"ausiliare" },
+    { frase:"Io ___ freddo, puoi chiudere la finestra?", a:"ho", opts:["ho","sono","hai","sei"],
+      h:"Espressione con avere", x:"Avere freddo/caldo/fame/sete sono espressioni idiomatiche → AVERE.", tipo:"idioma" },
+    { frase:"Maria ___ partita per le vacanze.", a:"è", opts:["è","ha","sono","hanno"],
+      h:"Ausiliare di 'partire'", x:"Partire (verbo di movimento) → usa ESSERE.", tipo:"ausiliare" },
+    { frase:"Noi ___ studiato tutta la sera.", a:"abbiamo", opts:["abbiamo","siamo","hanno","sono"],
+      h:"Ausiliare di 'studiare'", x:"Studiare è transitivo → usa AVERE.", tipo:"ausiliare" },
+    { frase:"Tu ___ cresciuto molto quest'anno!", a:"sei", opts:["sei","hai","è","ha"],
+      h:"Ausiliare di 'crescere'", x:"Crescere (verbo di cambiamento di stato) → usa ESSERE.", tipo:"ausiliare" },
+    { frase:"Il gatto ___ paura del temporale.", a:"ha", opts:["ha","è","hanno","sono"],
+      h:"Avere paura = espressione fissa", x:"'Avere paura' è un'espressione idiomatica con AVERE.", tipo:"idioma" },
+    { frase:"Loro ___ usciti presto stamattina.", a:"sono", opts:["sono","hanno","siamo","abbiamo"],
+      h:"Ausiliare di 'uscire'", x:"Uscire (movimento) → usa ESSERE: sono usciti.", tipo:"ausiliare" },
+  ],
+  difficile: [
+    { frase:"Il treno ___ partito con dieci minuti di ritardo.", a:"è", opts:["è","ha","sono","erano"],
+      h:"Ausiliare di 'partire'", x:"Partire (intransitivo di moto) → usa sempre ESSERE.", tipo:"ausiliare" },
+    { frase:"Gli atleti ___ corruto più veloci del solito.", a:"sono", opts:["sono","hanno","siamo","erano"],
+      h:"Correre può usare entrambi!", x:"'Correre' intransitivo (senza oggetto) → ESSERE: sono corsi.", tipo:"ausiliare" },
+    { frase:"Io ___ dovuto aspettare un'ora.", a:"ho", opts:["ho","sono","hai","sei"],
+      h:"Verbi modali: dipende dal verbo che segue", x:"Dovere + infinitivo intransitivo: può usare entrambi, ma con verbo di moto si preferisce l'aus. del verbo retto. Qui 'aspettare' → AVERE.", tipo:"ausiliare" },
+    { frase:"La storia ___ finita bene per tutti.", a:"è", opts:["è","ha","sono","hanno"],
+      h:"'Finire' intransitivo → essere", x:"Finire intransitivo (nessun oggetto) → ESSERE: la storia È finita.", tipo:"ausiliare" },
+    { frase:"Il cuoco ___ finito di preparare la cena.", a:"ha", opts:["ha","è","hanno","sono"],
+      h:"'Finire' transitivo → avere", x:"Finire transitivo (con oggetto: 'la cena') → AVERE: ha finito di preparare.", tipo:"ausiliare" },
+    { frase:"Non mi ___ piaciuto per niente quel film.", a:"è", opts:["è","ha","sono","hanno"],
+      h:"'Piacere' usa essere!", x:"Piacere è intransitivo → usa ESSERE: mi È piaciuto.", tipo:"ausiliare" },
+    { frase:"Quante volte ti ___ capitato di dimenticare qualcosa?", a:"è", opts:["è","ha","sono","hanno"],
+      h:"'Capitare' usa essere", x:"Capitare (verbo impersonale di stato) → usa ESSERE.", tipo:"ausiliare" },
+    { frase:"Loro ___ vissuto in quella casa per vent'anni.", a:"hanno", opts:["hanno","sono","ha","è"],
+      h:"'Vivere' transitivo → avere", x:"Vivere con complemento di tempo → AVERE: hanno vissuto.", tipo:"ausiliare" },
+    { frase:"Il bambino ___ riuscito a finire i compiti.", a:"è", opts:["è","ha","sono","hanno"],
+      h:"'Riuscire' usa essere", x:"Riuscire (intransitivo) → usa ESSERE: è riuscito.", tipo:"ausiliare" },
+    { frase:"I testimoni ___ raccontato tutto quello che ___ successo.", a:"hanno / è", opts:["hanno / è","sono / ha","hanno / ha","sono / è"],
+      h:"Due ausiliare diversi nella stessa frase", x:"Raccontare (transitivo) → AVERE. Succedere (impersonale) → ESSERE.", tipo:"ausiliare" },
+  ]
+};
+
 // ── Verbi: Trasforma ──
 export const verbiTrasforma = {
   facile: [

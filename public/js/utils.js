@@ -83,6 +83,7 @@ export const CATS = [
       { id: 'quiz', nm: 'Quiz', ic: '❓', ds: 'Domande sui verbi', tg: 'Classico' },
       { id: 'coniuga', nm: 'Coniuga!', ic: '⌨️', ds: 'Scrivi la forma corretta', tg: 'Scrittura' },
       { id: 'trasforma', nm: 'Trasforma', ic: '🔀', ds: 'Cambia il tempo verbale', tg: 'Trasformazione' },
+      { id: 'essereavere', nm: 'Essere o Avere?', ic: '⚖️', ds: 'Completa le frasi con la forma giusta di essere o avere', tg: '⭐ Esclusivo' },
     ]},
   { id: 'ortografia', nm: 'Ortografia', ic: '✍️', ds: 'Accenti, doppie e apostrofi', cl: ['#F0B830', '#FF922B'],
     modes: [

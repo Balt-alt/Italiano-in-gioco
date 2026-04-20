@@ -4,7 +4,7 @@ App educativa interattiva per imparare l'italiano, pensata per bambini della scu
 
 ## Caratteristiche
 
-- **25+ modalità di gioco** per 7 categorie: Grammatica, Vocabolario, Verbi, Ortografia, Comprensione, Analisi Logica, Produzione Scritta
+- **26+ modalità di gioco** per 7 categorie: Grammatica, Vocabolario, Verbi (incl. gioco esclusivo "Essere o Avere?"), Ortografia, Comprensione, Analisi Logica, Produzione Scritta
 - **Sfide online in tempo reale** via Socket.io — crea una stanza, condividi il codice, gioca contro un amico su un altro dispositivo
 - **Sfida del Giorno** — 5 domande miste ogni giorno con bonus XP; al termine sblocca 3 mini giochi arcade (Snake, Memory, Breakout)
 - **Glossario grammaticale** — 30+ termini con definizioni, esempi e navigazione per categoria, consultabile dai profili

@@ -159,6 +159,7 @@ export async function startGame(cat, mode) {
     if (mode === 'quiz') return startQuiz(Q.verbiQuiz, d);
     if (mode === 'coniuga') return startConiuga(d);
     if (mode === 'trasforma') return startTrasforma(d);
+    if (mode === 'essereavere') return startEssereAvere(d);
   }
   // Ortografia
   if (cat === 'ortografia') {
@@ -653,6 +654,52 @@ window._nextTrasforma = () => {
   game.ci++;
   if (game.ci >= game.tot) endGame(); else showTrasforma();
 };
+
+// ══════════════════════════════════════
+// ESSERE O AVERE (Verbi — gioco esclusivo)
+// ══════════════════════════════════════
+function startEssereAvere(d) {
+  let pool = [...(Q.verbiEssereAvere[d] || Q.verbiEssereAvere.facile || [])];
+  game.qs = shuffle(pool).slice(0, Math.min(profileData.questions_count, pool.length));
+  game.tot = game.qs.length;
+  showEssereAvere();
+}
+
+function showEssereAvere() {
+  const q = game.qs[game.ci];
+  const cat = CATS.find(c => c.id === game.cat);
+  const opts = shuffle([...q.opts]);
+  const tipoLabel = { presente: '🔵 Presente Indicativo', ausiliare: '🟣 Ausiliare nel Passato', idioma: '🟠 Espressione Idiomatica' };
+
+  // Evidenzia il blank nella frase
+  const fraseHTML = esc(q.frase).replace('___', '<span style="display:inline-block;min-width:70px;border-bottom:3px solid var(--lav);color:var(--lav);font-weight:900;text-align:center">___</span>');
+
+  renderInto(`
+    <button class="nav-back" onclick="window._quitGame()">← Esci</button>
+    <div class="quiz-area">
+      <div class="progress-wrap">
+        <div class="progress-bg"><div class="progress-fill" style="width:${(game.ci / game.tot) * 100}%"></div></div>
+        <span class="progress-text">${game.ci + 1}/${game.tot}</span>
+      </div>
+      <div class="category-tag" style="background:${cat.cl[0]}12;color:${cat.cl[0]}">${cat.ic} Essere o Avere? 🤔</div>
+      <div style="text-align:center;margin-bottom:6px">
+        <span style="font-size:.75rem;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--surface-2,#f0ecff);color:var(--muted)">${tipoLabel[q.tipo] || ''}</span>
+      </div>
+      <div class="question-text" style="font-size:1.3rem;line-height:1.6">${fraseHTML}</div>
+      ${q.h ? `<div class="question-context">💡 ${esc(q.h)}</div>` : ''}
+      <div class="answers-grid" style="grid-template-columns:1fr 1fr">
+        ${opts.map(o => `<button class="answer-btn ea-btn" onclick="window._checkEA(this,'${escAttr(o)}','${escAttr(q.a)}')">${esc(o)}</button>`).join('')}
+      </div>
+      <div id="feedback-box"></div>
+      <div id="next-box" style="display:none" class="btn-group">
+        <button class="btn btn-primary" onclick="window._nextEA()">Avanti ➜</button>
+      </div>
+    </div>`);
+
+  window._checkEA = (btn, sel, correct) => checkMultipleAnswer(btn, sel, correct, { ...q, w: q.opts.filter(o => o !== q.a) });
+}
+
+window._nextEA = () => { game.ci++; if (game.ci >= game.tot) endGame(); else showEssereAvere(); };
 
 // ══════════════════════════════════════
 // TROVA L'ERRORE (Ortografia)
