@@ -7,6 +7,8 @@ import { initGames, startGame, startReview, startChallenge, refreshProfile } fro
 import { defaultConfig, renderAvatar, renderAvatarBuilder, avatarHTML } from './avatar.js';
 import { LESSONS } from './lessons.js';
 import { initOnlineChallenge, showOnlineLobby } from './challenge.js';
+import { initDaily, showDailyChallenge } from './daily.js';
+import { initGlossary, showGlossary } from './glossary.js';
 
 function parseAvatar(raw) {
   if (!raw) return null;
@@ -36,6 +38,8 @@ function navigate(screen, param) {
     case 'custom':     showCustomQ(); break;
     case 'admin':      showAdmin(); break;
     case 'challenge':  showOnlineLobby(); break;
+    case 'daily':      showDailyChallenge(); break;
+    case 'glossary':   showGlossary(); break;
     default:           showProfiles();
   }
 }
@@ -75,6 +79,8 @@ window._selectProfile = async (id) => {
   currentProfile = await api.getProfile(id);
   initGames(id, currentProfile, navigate);
   initOnlineChallenge(id, currentProfile, render, navigate);
+  initDaily(id, render, navigate);
+  initGlossary(render, navigate);
   applyAccessibility();
   showHome();
 };
@@ -121,6 +127,7 @@ async function showHome() {
   refreshProfile(currentProfile);
   applyAccessibility();
   const p = currentProfile;
+  const dailyStatus = await api.getDailyStatus(currentProfileId).catch(() => ({ completed: false }));
   const lv = Math.floor(p.xp / 200) + 1;
   const cs = p.category_scores || [];
 
@@ -151,9 +158,20 @@ async function showHome() {
         </div>`;
       }).join('')}
     </div>
-    <div class="btn-group" style="margin-top:20px">
+    <!-- Banner sfida giornaliera -->
+    <div onclick="window._navigate('daily')" style="cursor:pointer;background:linear-gradient(135deg,#f9a825,#ff6b35);border-radius:var(--r);padding:14px 18px;margin-top:20px;display:flex;align-items:center;gap:14px;box-shadow:0 4px 14px rgba(249,168,37,.3)">
+      <span style="font-size:2rem">🌟</span>
+      <div style="flex:1">
+        <div style="font-weight:800;color:#fff;font-size:1rem">Sfida del Giorno</div>
+        <div style="font-size:.8rem;color:rgba(255,255,255,.85)">${dailyStatus.completed ? '✅ Già completata oggi! Torna domani.' : '5 domande miste · Bonus XP disponibile!'}</div>
+      </div>
+      ${dailyStatus.completed ? '<span style="font-size:1.4rem">✅</span>' : '<span style="background:rgba(255,255,255,.2);color:#fff;font-weight:700;padding:6px 14px;border-radius:50px;font-size:.85rem">Gioca →</span>'}
+    </div>
+
+    <div class="btn-group" style="margin-top:14px">
       <button class="btn btn-sun btn-sm" onclick="window._showMap()">🗺️ Mappa</button>
       <button class="btn btn-mint btn-sm" onclick="window._showChallenge()">⚔️ Sfida</button>
+      <button class="btn btn-ghost btn-sm" onclick="window._navigate('glossary')">📚 Glossario</button>
       <button class="btn btn-ghost btn-sm" onclick="window._showLessons()">📖 Lezioni</button>
       <button class="btn btn-ghost btn-sm" onclick="window._editAvatar()">🎨 Avatar</button>
       <button class="btn btn-ghost btn-sm" onclick="window._navigate('settings')">⚙️ Impostazioni</button>
@@ -730,6 +748,34 @@ async function showAdmin() {
         </div>
       </div>
 
+      <!-- Generazione con AI -->
+      <div class="card" style="margin-top:14px">
+        <h3 style="margin-bottom:4px">🤖 Genera con AI</h3>
+        <p style="color:var(--muted);font-size:.82rem;margin-bottom:14px">Scrivi un argomento e Claude genererà le domande automaticamente</p>
+        <div class="setting-row">
+          <label>🎯 Argomento</label>
+          <input type="text" id="ai-topic" class="input" placeholder="Es: il passato prossimo, gli aggettivi possessivi, i sinonimi...">
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+          <select id="ai-cat" class="input" style="flex:2;min-width:150px">
+            ${CATS.map(c => `<option value="${c.id}">${c.ic} ${c.nm}</option>`).join('')}
+          </select>
+          <select id="ai-diff" class="input" style="flex:1;min-width:110px">
+            <option value="facile">🟢 Facile</option>
+            <option value="medio">🟡 Medio</option>
+            <option value="difficile">🔴 Difficile</option>
+          </select>
+          <select id="ai-count" class="input" style="flex:1;min-width:100px">
+            <option value="5">5 domande</option>
+            <option value="8">8 domande</option>
+            <option value="10" selected>10 domande</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="window._aiGenerate()" id="ai-gen-btn">✨ Genera Domande</button>
+        <div id="ai-error" style="color:var(--coral);font-size:.85rem;margin-top:8px;min-height:18px"></div>
+        <div id="ai-preview" style="margin-top:12px"></div>
+      </div>
+
       <!-- Lista domande personalizzate -->
       <div class="card" style="margin-top:14px">
         <h3 style="margin-bottom:12px">📋 Domande Personalizzate (${customContent.length})</h3>
@@ -768,6 +814,12 @@ async function showAdmin() {
             <button class="btn btn-ghost btn-sm" onclick="window._clearProfileErrors('${p.id}')">🧹 Errori</button>
             <button class="btn btn-coral btn-sm" onclick="window._deleteProfileAdmin('${p.id}')">🗑️</button>
           </div>`).join('')}
+        </div>
+        <div style="margin-top:16px;border-top:2px solid var(--border);padding-top:14px">
+          <h3 style="margin-bottom:10px">🤖 Impostazioni AI</h3>
+          <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">Inserisci la tua chiave API Anthropic per usare la generazione automatica di domande. La chiave viene salvata solo sul server.</p>
+          <div class="setting-row"><label>🔑 Chiave API Anthropic</label><input type="password" id="ai-api-key" class="input" placeholder="sk-ant-..."></div>
+          <div class="btn-group" style="justify-content:flex-start"><button class="btn btn-primary btn-sm" onclick="window._saveApiKey()">Salva Chiave</button></div>
         </div>
         <div style="margin-top:16px;border-top:2px solid var(--border);padding-top:14px"><h3>📦 Backup</h3>
           <div class="btn-group" style="justify-content:flex-start">
@@ -915,6 +967,77 @@ window._importAll = async (input) => {
     window._goProfiles(); // sessione invalidata dopo import
   } catch (e) { alert('Errore: ' + e.message); }
   input.value = '';
+};
+
+// ══════════════════════════════════════
+// AI GENERATION
+// ══════════════════════════════════════
+window._saveApiKey = async () => {
+  const key = document.getElementById('ai-api-key')?.value.trim();
+  if (!key || !key.startsWith('sk-')) { alert('Inserisci una chiave API valida (inizia con sk-)'); return; }
+  try {
+    await api.setAdminSetting('anthropic_api_key', key);
+    alert('✅ Chiave API salvata!');
+    document.getElementById('ai-api-key').value = '';
+  } catch(e) { alert('Errore: ' + e.message); }
+};
+
+window._aiGenerate = async () => {
+  const topic  = document.getElementById('ai-topic')?.value.trim();
+  const cat    = document.getElementById('ai-cat')?.value;
+  const diff   = document.getElementById('ai-diff')?.value;
+  const count  = document.getElementById('ai-count')?.value;
+  const errEl  = document.getElementById('ai-error');
+  const btn    = document.getElementById('ai-gen-btn');
+  const preview = document.getElementById('ai-preview');
+
+  if (!topic) { errEl.textContent = 'Scrivi un argomento prima di generare.'; return; }
+  errEl.textContent = '';
+  btn.disabled = true;
+  btn.textContent = '⏳ Generazione in corso...';
+  preview.innerHTML = '';
+
+  try {
+    const { questions } = await api.generateQuestions({ category: cat, difficulty: diff, topic, count });
+    if (!questions?.length) throw new Error('Nessuna domanda generata');
+
+    preview.innerHTML = `
+      <div style="font-weight:700;margin-bottom:10px">✅ ${questions.length} domande generate — seleziona quelle da salvare:</div>
+      ${questions.map((q, i) => `
+        <div style="padding:10px;border:2px solid var(--border);border-radius:10px;margin-bottom:8px">
+          <label style="display:flex;gap:10px;cursor:pointer;align-items:flex-start">
+            <input type="checkbox" id="ai-q-${i}" checked style="margin-top:3px;flex-shrink:0">
+            <div>
+              <div style="font-weight:600;font-size:.9rem">${esc(q.q)}</div>
+              <div style="font-size:.8rem;color:var(--mint);margin-top:3px">✅ ${esc(q.a)}</div>
+              <div style="font-size:.78rem;color:var(--muted)">${(q.w||[]).map(w => `❌ ${esc(w)}`).join(' · ')}</div>
+              ${q.explanation ? `<div style="font-size:.76rem;color:var(--muted);margin-top:2px">💡 ${esc(q.explanation)}</div>` : ''}
+            </div>
+          </label>
+        </div>`).join('')}
+      <button class="btn btn-primary btn-sm" style="margin-top:4px" onclick="window._aiSaveSelected(${JSON.stringify(questions).replace(/'/g,"\\'")},'${cat}','${diff}')">
+        💾 Salva Selezionate
+      </button>`;
+  } catch(e) {
+    errEl.textContent = e.message.includes('non configurata') ? '⚠️ ' + e.message : 'Errore: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✨ Genera Domande';
+  }
+};
+
+window._aiSaveSelected = async (questions, cat, diff) => {
+  const toSave = questions.filter((_, i) => document.getElementById(`ai-q-${i}`)?.checked);
+  if (!toSave.length) { alert('Seleziona almeno una domanda.'); return; }
+  let saved = 0;
+  for (const q of toSave) {
+    try {
+      await api.addCustomContent('quiz', cat, diff, { q: q.q, a: q.a, w: q.w || [], hint: q.hint || '', explanation: q.explanation || '' });
+      saved++;
+    } catch(_) {}
+  }
+  alert(`✅ ${saved} domanda/e salvate!`);
+  showAdmin();
 };
 
 // ══════════════════════════════════════

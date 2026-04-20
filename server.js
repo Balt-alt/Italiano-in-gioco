@@ -4,6 +4,7 @@ const path = require('path');
 const crypto = require('crypto');
 const http = require('http');
 const { Server: SocketServer } = require('socket.io');
+const Anthropic = require('@anthropic-ai/sdk');
 const db = require('./db');
 
 const app = express();
@@ -273,6 +274,81 @@ app.put('/api/admin/pin', requireAdmin, (req, res) => {
 
 app.get('/api/admin/stats', requireAdmin, (req, res) => {
   res.json(db.getAdminStats());
+});
+
+// Salva/leggi impostazioni generiche (es. chiave API)
+app.get('/api/admin/settings/:key', requireAdmin, (req, res) => {
+  const allowed = ['anthropic_api_key'];
+  if (!allowed.includes(req.params.key)) return res.status(400).json({ error: 'Chiave non valida' });
+  const val = db.getSetting(req.params.key);
+  // Per la chiave API, restituisci solo se è impostata (non il valore)
+  if (req.params.key === 'anthropic_api_key') return res.json({ configured: !!val });
+  res.json({ value: val });
+});
+
+app.put('/api/admin/settings', requireAdmin, (req, res) => {
+  const { key, value } = req.body;
+  const allowed = ['anthropic_api_key'];
+  if (!allowed.includes(key)) return res.status(400).json({ error: 'Chiave non valida' });
+  if (!value || typeof value !== 'string' || value.trim().length === 0) {
+    return res.status(400).json({ error: 'Valore non valido' });
+  }
+  db.setSetting(key, value.trim());
+  res.json({ ok: true });
+});
+
+// Generazione domande con AI
+app.post('/api/admin/generate-questions', requireAdmin, async (req, res) => {
+  const { category, difficulty, topic, count } = req.body;
+  if (!category || !difficulty || !topic) {
+    return res.status(400).json({ error: 'category, difficulty e topic sono obbligatori' });
+  }
+  const apiKey = db.getSetting('anthropic_api_key');
+  if (!apiKey) {
+    return res.status(400).json({ error: 'Chiave API Anthropic non configurata. Aggiungila nella sezione Impostazioni AI.' });
+  }
+  try {
+    const client = new Anthropic({ apiKey });
+    const n = Math.min(Math.max(parseInt(count) || 5, 1), 15);
+    const msg = await client.messages.create({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 2048,
+      messages: [{
+        role: 'user',
+        content: `Sei un insegnante di italiano per la scuola primaria italiana.
+Genera esattamente ${n} domande a scelta multipla sulla categoria "${category}" (difficoltà: ${difficulty}) sull'argomento: "${topic}".
+Le domande devono essere adatte a bambini, chiare e didatticamente corrette.
+
+Rispondi SOLO con un array JSON valido, senza testo aggiuntivo, senza markdown, senza backtick:
+[{"q":"testo domanda","a":"risposta corretta","w":["sbagliata1","sbagliata2","sbagliata3"],"hint":"breve suggerimento","explanation":"spiegazione breve della risposta corretta"}]`
+      }]
+    });
+    const text = msg.content[0].text.trim();
+    const questions = JSON.parse(text);
+    if (!Array.isArray(questions)) throw new Error('Formato risposta non valido');
+    res.json({ questions });
+  } catch (e) {
+    console.error('AI generation error:', e.message);
+    res.status(500).json({ error: 'Errore generazione: ' + e.message });
+  }
+});
+
+// ══════════════════════════════════════
+// SFIDA GIORNALIERA
+// ══════════════════════════════════════
+app.get('/api/profiles/:id/daily', (req, res) => {
+  const record = db.getTodayChallenge(req.params.id);
+  const today = new Date().toISOString().split('T')[0];
+  res.json({ completed: !!record, record: record || null, date: today });
+});
+
+app.post('/api/profiles/:id/daily', (req, res) => {
+  const { score, total } = req.body;
+  if (score === undefined || total === undefined) {
+    return res.status(400).json({ error: 'score e total richiesti' });
+  }
+  const result = db.completeDailyChallenge(req.params.id, parseInt(score) || 0, parseInt(total) || 5);
+  res.json(result);
 });
 
 // ══════════════════════════════════════

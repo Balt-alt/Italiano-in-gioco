@@ -43,6 +43,7 @@ async function init() {
     CREATE TABLE IF NOT EXISTS badges (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id TEXT NOT NULL, badge_id TEXT NOT NULL, earned_at TEXT DEFAULT (datetime('now')), UNIQUE(profile_id, badge_id));
     CREATE TABLE IF NOT EXISTS custom_questions (id INTEGER PRIMARY KEY AUTOINCREMENT, category TEXT NOT NULL, question TEXT NOT NULL, answer TEXT NOT NULL, wrong_answers TEXT DEFAULT '[]', hint TEXT DEFAULT '', created_at TEXT DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS custom_content (id INTEGER PRIMARY KEY AUTOINCREMENT, game_type TEXT NOT NULL, category TEXT NOT NULL, difficulty TEXT NOT NULL DEFAULT 'facile', data TEXT NOT NULL, created_at TEXT DEFAULT (datetime('now')));
+    CREATE TABLE IF NOT EXISTS daily_challenges (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id TEXT NOT NULL, date TEXT NOT NULL, score INTEGER DEFAULT 0, total INTEGER DEFAULT 5, xp_earned INTEGER DEFAULT 0, completed_at TEXT DEFAULT (datetime('now')), UNIQUE(profile_id, date));
   `);
 
   const existingPin = get("SELECT value FROM settings WHERE key=?", ['admin_pin']);
@@ -64,6 +65,23 @@ const verifyPin = (pin) => {
   return stored === hashPin(pin);
 };
 const setAdminPin = (pin) => run("INSERT OR REPLACE INTO settings (key,value) VALUES (?,?)", ['admin_pin', hashPin(pin)]);
+const getSetting = (key) => get("SELECT value FROM settings WHERE key=?", [key])?.value || null;
+const setSetting = (key, value) => run("INSERT OR REPLACE INTO settings (key,value) VALUES (?,?)", [key, value]);
+
+// Daily challenges
+const getTodayChallenge = (profileId) => {
+  const today = new Date().toISOString().split('T')[0];
+  return get("SELECT * FROM daily_challenges WHERE profile_id=? AND date=?", [profileId, today]);
+};
+const completeDailyChallenge = (profileId, score, total) => {
+  const today = new Date().toISOString().split('T')[0];
+  const existing = getTodayChallenge(profileId);
+  if (existing) return { xp: 0, alreadyDone: true };
+  const xp = 50 + (score * 10); // 50 base + 10 per ogni risposta corretta
+  run("INSERT INTO daily_challenges (profile_id,date,score,total,xp_earned) VALUES (?,?,?,?,?)", [profileId, today, score, total, xp]);
+  run("UPDATE profiles SET xp=xp+? WHERE id=?", [xp, profileId]);
+  return { xp, alreadyDone: false };
+};
 const getProfiles = () => all("SELECT * FROM profiles ORDER BY created_at");
 const getProfile = (id) => {
   const p = get("SELECT * FROM profiles WHERE id=?", [id]);
@@ -152,4 +170,4 @@ const importAll = (data) => {
 
 const getAdminStats = () => getProfiles().map(p => ({ ...getProfile(p.id), errorsByCategory: all("SELECT category, COUNT(*) as count FROM error_log WHERE profile_id=? GROUP BY category", [p.id]) }));
 
-module.exports = { init, verifyPin, setAdminPin, getProfiles, getProfile, createProfile, updateProfile, deleteProfile, saveGameResult, logError, getErrors, getAllErrors, clearErrors, getDueReviews, updateReview, addBadge, updateStreak, getCustomQuestions, addCustomQuestion, deleteCustomQuestion, getCustomContent, getAllCustomContent, addCustomContent, deleteCustomContent, exportAll, importAll, getAdminStats };
+module.exports = { init, verifyPin, setAdminPin, getSetting, setSetting, getProfiles, getProfile, createProfile, updateProfile, deleteProfile, saveGameResult, logError, getErrors, getAllErrors, clearErrors, getDueReviews, updateReview, addBadge, updateStreak, getCustomQuestions, addCustomQuestion, deleteCustomQuestion, getCustomContent, getAllCustomContent, addCustomContent, deleteCustomContent, exportAll, importAll, getAdminStats, getTodayChallenge, completeDailyChallenge };

@@ -97,6 +97,14 @@ export const api = {
     return result;
   },
   getAdminStats: () => request('/admin/stats'),
+  getAdminSetting: (key) => request(`/admin/settings/${key}`),
+  setAdminSetting: (key, value) => request('/admin/settings', { method: 'PUT', body: { key, value } }),
+  generateQuestions: (data) => request('/admin/generate-questions', { method: 'POST', body: data }),
+
+  // Daily challenge
+  getDailyStatus: (profileId) => request(`/profiles/${profileId}/daily`),
+  completeDailyChallenge: (profileId, score, total) =>
+    request(`/profiles/${profileId}/daily`, { method: 'POST', body: { score, total } }),
 
   // Backup
   exportAll: () => request('/backup/export'),
