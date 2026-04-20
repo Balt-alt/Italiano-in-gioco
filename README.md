@@ -6,7 +6,7 @@ App educativa interattiva per imparare l'italiano, pensata per bambini della scu
 
 - **25+ modalità di gioco** per 7 categorie: Grammatica, Vocabolario, Verbi, Ortografia, Comprensione, Analisi Logica, Produzione Scritta
 - **Sfide online in tempo reale** via Socket.io — crea una stanza, condividi il codice, gioca contro un amico su un altro dispositivo
-- **Sfida del Giorno** — 5 domande miste ogni giorno con bonus XP, disponibile dalla home
+- **Sfida del Giorno** — 5 domande miste ogni giorno con bonus XP; al termine sblocca 3 mini giochi arcade (Snake, Memory, Breakout)
 - **Glossario grammaticale** — 30+ termini con definizioni, esempi e navigazione per categoria, consultabile dai profili
 - **Generazione domande con AI** — inserisci un argomento nel pannello admin e Claude genera domande pronte da salvare (richiede chiave API Anthropic)
 - **Multi-profilo**: ogni bambino ha il suo account con XP, livello, badge e progressi separati

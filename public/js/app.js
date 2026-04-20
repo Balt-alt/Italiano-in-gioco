@@ -9,6 +9,7 @@ import { LESSONS } from './lessons.js';
 import { initOnlineChallenge, showOnlineLobby } from './challenge.js';
 import { initDaily, showDailyChallenge } from './daily.js';
 import { initGlossary, showGlossary } from './glossary.js';
+import { initMinigames, showMinigames } from './minigames.js';
 
 function parseAvatar(raw) {
   if (!raw) return null;
@@ -41,6 +42,7 @@ function navigate(screen, param) {
     case 'challenge':  showOnlineLobby(); break;
     case 'daily':      showDailyChallenge(); break;
     case 'glossary':   showGlossary(); break;
+    case 'minigames':  showMinigames(); break;
     default:           showProfiles();
   }
 }
@@ -82,6 +84,7 @@ window._selectProfile = async (id) => {
   initOnlineChallenge(id, currentProfile, render, navigate);
   initDaily(id, render, navigate);
   initGlossary(render, navigate);
+  initMinigames(render, navigate);
   applyAccessibility();
   showHome();
 };

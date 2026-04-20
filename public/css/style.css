@@ -16,6 +16,14 @@
 body.dyslexia-mode { font-family: var(--fl) !important; --fs: 18px; letter-spacing: .04em; line-height: 1.9; }
 body.dyslexia-mode * { font-family: var(--fl) !important; }
 body.large-text { --fs: 20px; }
+body.uppercase-text .question-text,
+body.uppercase-text .answer-btn,
+body.uppercase-text .question-context,
+body.uppercase-text .feedback,
+body.uppercase-text .card-title,
+body.uppercase-text .vf-btn,
+body.uppercase-text .match-item,
+body.uppercase-text .classify-item { text-transform: uppercase; letter-spacing: .05em; }
 
 /* ── Reset ── */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -370,6 +378,23 @@ h1, h2, h3 { font-family: var(--fd); }
 }
 
 /* ── Sfide Online ── */
+/* ── Mini Giochi ── */
+.mg-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 10px;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+  border: none;
+  text-align: center;
+}
+.mg-tile:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,.18); }
+.mg-tile:active { transform: scale(.96); }
+.mg-icon { font-size: 2.6rem; line-height: 1; }
+.mg-label { font-weight: 700; font-size: .95rem; margin-top: 10px; }
+
 .challenge-code-box {
   background: rgba(177,151,252,.08);
   border: 2px dashed var(--lav);

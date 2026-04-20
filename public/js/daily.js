@@ -164,8 +164,9 @@ async function _endDaily(sc, tot) {
 
       ${perfect ? `<div style="padding:10px;background:rgba(255,209,0,.1);border-radius:12px;margin-bottom:16px;font-weight:700;color:var(--sun)">🌟 Punteggio Perfetto! Bonus +50 XP incluso!</div>` : ''}
 
-      <div class="btn-group">
-        <button class="btn btn-primary" onclick="window._navigate('home')">🏠 Torna al Menu</button>
+      <div class="btn-group" style="flex-direction:column;gap:10px">
+        <button class="btn btn-primary" onclick="window._navigate('minigames')" style="background:linear-gradient(135deg,#f76707,#fd7e14)">🎮 Gioca ai Mini Giochi!</button>
+        <button class="btn btn-ghost" onclick="window._navigate('home')">🏠 Torna al Menu</button>
       </div>
       <p style="font-size:.78rem;color:var(--muted);margin-top:14px">La prossima sfida sarà disponibile domani</p>
     </div>`);
