@@ -26,6 +26,7 @@ function applyAccessibility() {
   if (!currentProfile) return;
   document.body.classList.toggle('dyslexia-mode', !!currentProfile.dyslexia_mode);
   document.body.classList.toggle('large-text', !!currentProfile.large_text);
+  document.body.classList.toggle('uppercase-text', !!currentProfile.uppercase_text);
 }
 
 function navigate(screen, param) {
@@ -448,6 +449,9 @@ function showSettings() {
         <div class="toggle-row">
           <button class="toggle ${s.large_text?'on':''}" onclick="this.classList.toggle('on');window._updateSetting('large_text',this.classList.contains('on')?1:0)"></button>
           <span style="font-weight:700">Testo Grande</span></div>
+        <div class="toggle-row">
+          <button class="toggle ${s.uppercase_text?'on':''}" onclick="this.classList.toggle('on');window._updateSetting('uppercase_text',this.classList.contains('on')?1:0)"></button>
+          <span style="font-weight:700">Testo Maiuscolo</span><span style="font-size:.76rem;color:var(--muted)">(per chi ha difficoltà di lettura)</span></div>
       </div>
       <div class="btn-group"><button class="btn btn-primary" onclick="window._navigate('home')">✅ Fatto</button></div>
     </div>`);

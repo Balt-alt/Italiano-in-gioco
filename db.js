@@ -36,7 +36,7 @@ async function init() {
   }
   exec(`
     CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS profiles (id TEXT PRIMARY KEY, name TEXT NOT NULL, avatar TEXT DEFAULT '🦊', color TEXT DEFAULT '#B197FC', xp INTEGER DEFAULT 0, streak INTEGER DEFAULT 0, best_streak INTEGER DEFAULT 0, games_played INTEGER DEFAULT 0, difficulty TEXT DEFAULT 'facile', questions_count INTEGER DEFAULT 10, timer_seconds INTEGER DEFAULT 20, answer_type TEXT DEFAULT 'multiple', dyslexia_mode INTEGER DEFAULT 0, large_text INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')));
+    CREATE TABLE IF NOT EXISTS profiles (id TEXT PRIMARY KEY, name TEXT NOT NULL, avatar TEXT DEFAULT '🦊', color TEXT DEFAULT '#B197FC', xp INTEGER DEFAULT 0, streak INTEGER DEFAULT 0, best_streak INTEGER DEFAULT 0, games_played INTEGER DEFAULT 0, difficulty TEXT DEFAULT 'facile', questions_count INTEGER DEFAULT 10, timer_seconds INTEGER DEFAULT 20, answer_type TEXT DEFAULT 'multiple', dyslexia_mode INTEGER DEFAULT 0, large_text INTEGER DEFAULT 0, uppercase_text INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS category_scores (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id TEXT NOT NULL, category TEXT NOT NULL, played INTEGER DEFAULT 0, best_score INTEGER DEFAULT 0, UNIQUE(profile_id, category));
     CREATE TABLE IF NOT EXISTS error_log (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id TEXT NOT NULL, category TEXT NOT NULL, question TEXT NOT NULL, user_answer TEXT NOT NULL, correct_answer TEXT NOT NULL, difficulty TEXT NOT NULL, created_at TEXT DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS spaced_repetition (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id TEXT NOT NULL, category TEXT NOT NULL, question TEXT NOT NULL, correct_answer TEXT NOT NULL, wrong_answers TEXT DEFAULT '[]', hint TEXT DEFAULT '', explanation TEXT DEFAULT '', next_review TEXT NOT NULL, interval_days REAL DEFAULT 1, ease_factor REAL DEFAULT 2.5, repetitions INTEGER DEFAULT 0, UNIQUE(profile_id, question));
@@ -94,7 +94,7 @@ const getProfile = (id) => {
 };
 const createProfile = (id, name, avatar, color) => { run("INSERT INTO profiles (id,name,avatar,color) VALUES (?,?,?,?)", [id, name, avatar, color]); return getProfile(id); };
 const updateProfile = (id, data) => {
-  const allowed = ['name','avatar','color','xp','streak','best_streak','games_played','difficulty','questions_count','timer_seconds','answer_type','dyslexia_mode','large_text'];
+  const allowed = ['name','avatar','color','xp','streak','best_streak','games_played','difficulty','questions_count','timer_seconds','answer_type','dyslexia_mode','large_text','uppercase_text'];
   const f = [], v = [];
   for (const k of allowed) if (data[k] !== undefined) { f.push(`${k}=?`); v.push(data[k]); }
   if (!f.length) return getProfile(id);
@@ -154,7 +154,7 @@ const importAll = (data) => {
     runRaw("DELETE FROM profiles");
     runRaw("DELETE FROM settings");
     if (data.settings) for (const r of data.settings) runRaw("INSERT INTO settings (key,value) VALUES (?,?)", [r.key, r.value]);
-    if (data.profiles) for (const r of data.profiles) runRaw("INSERT INTO profiles (id,name,avatar,color,xp,streak,best_streak,games_played,difficulty,questions_count,timer_seconds,answer_type,dyslexia_mode,large_text,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [r.id,r.name,r.avatar,r.color,r.xp,r.streak,r.best_streak,r.games_played,r.difficulty,r.questions_count,r.timer_seconds,r.answer_type,r.dyslexia_mode,r.large_text,r.created_at,r.updated_at]);
+    if (data.profiles) for (const r of data.profiles) runRaw("INSERT INTO profiles (id,name,avatar,color,xp,streak,best_streak,games_played,difficulty,questions_count,timer_seconds,answer_type,dyslexia_mode,large_text,uppercase_text,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [r.id,r.name,r.avatar,r.color,r.xp,r.streak,r.best_streak,r.games_played,r.difficulty,r.questions_count,r.timer_seconds,r.answer_type,r.dyslexia_mode,r.large_text,r.uppercase_text||0,r.created_at,r.updated_at]);
     if (data.category_scores) for (const r of data.category_scores) runRaw("INSERT INTO category_scores (profile_id,category,played,best_score) VALUES (?,?,?,?)", [r.profile_id,r.category,r.played,r.best_score]);
     if (data.error_log) for (const r of data.error_log) runRaw("INSERT INTO error_log (profile_id,category,question,user_answer,correct_answer,difficulty,created_at) VALUES (?,?,?,?,?,?,?)", [r.profile_id,r.category,r.question,r.user_answer,r.correct_answer,r.difficulty,r.created_at]);
     if (data.badges) for (const r of data.badges) runRaw("INSERT INTO badges (profile_id,badge_id,earned_at) VALUES (?,?,?)", [r.profile_id,r.badge_id,r.earned_at]);

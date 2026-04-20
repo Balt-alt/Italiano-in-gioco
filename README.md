@@ -13,7 +13,7 @@ App educativa interattiva per imparare l'italiano, pensata per bambini della scu
 - **Pannello Admin** protetto da PIN con sessioni sicure (token server-side, scadenza 2h)
 - **Domande personalizzate**: aggiungi domande dal pannello admin — i tipi disponibili si adattano alla categoria selezionata (quiz per tutte, vero/falso solo comprensione, abbina coppie solo vocabolario)
 - **Ripetizione spaziata** per ripassare automaticamente gli errori
-- **Accessibilità**: modalità dislessia (font Lexend + spaziatura) e testo grande
+- **Accessibilità**: modalità dislessia (font Lexend + spaziatura), testo grande e testo tutto maiuscolo (per bambini con maggiori difficoltà di lettura)
 - **Salvataggio server-side** con SQLite (sql.js)
 - **Backup completo** Import/Export JSON dal pannello admin
 - **Frontend minificato**: tutto il codice client è bundlato e offuscato in produzione
