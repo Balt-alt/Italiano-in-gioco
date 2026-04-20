@@ -6,6 +6,7 @@ import { esc, escAttr, genId, AVATARS, AVATAR_COLORS, CATS, BADGES } from './uti
 import { initGames, startGame, startReview, startChallenge, refreshProfile } from './games.js';
 import { defaultConfig, renderAvatar, renderAvatarBuilder, avatarHTML } from './avatar.js';
 import { LESSONS } from './lessons.js';
+import { initOnlineChallenge, showOnlineLobby } from './challenge.js';
 
 function parseAvatar(raw) {
   if (!raw) return null;
@@ -27,14 +28,15 @@ function applyAccessibility() {
 
 function navigate(screen, param) {
   switch (screen) {
-    case 'profiles': showProfiles(); break;
-    case 'home': showHome(); break;
-    case 'category': showCategory(param); break;
-    case 'settings': showSettings(); break;
-    case 'badges': showBadges(); break;
-    case 'custom': showCustomQ(); break;
-    case 'admin': showAdmin(); break;
-    default: showProfiles();
+    case 'profiles':   showProfiles(); break;
+    case 'home':       showHome(); break;
+    case 'category':   showCategory(param); break;
+    case 'settings':   showSettings(); break;
+    case 'badges':     showBadges(); break;
+    case 'custom':     showCustomQ(); break;
+    case 'admin':      showAdmin(); break;
+    case 'challenge':  showOnlineLobby(); break;
+    default:           showProfiles();
   }
 }
 
@@ -72,6 +74,7 @@ window._selectProfile = async (id) => {
   currentProfileId = id;
   currentProfile = await api.getProfile(id);
   initGames(id, currentProfile, navigate);
+  initOnlineChallenge(id, currentProfile, render, navigate);
   applyAccessibility();
   showHome();
 };
@@ -253,31 +256,59 @@ window._openLesson = (catId, idx) => {
 };
 
 // ══════════════════════════════════════
-// SFIDE TRA PROFILI
+// SFIDE — scegli modalità (locale / online)
 // ══════════════════════════════════════
-window._showChallenge = async () => {
+window._showChallenge = () => {
+  render(`
+    <button class="nav-back" onclick="window._navigate('home')">← Menu</button>
+    <div class="card" style="max-width:440px;margin:0 auto;text-align:center">
+      <div style="font-size:3rem;margin-bottom:8px">⚔️</div>
+      <h2 style="margin-bottom:4px">Sfide</h2>
+      <p style="color:var(--muted);font-size:.88rem;margin-bottom:24px">Scegli come vuoi giocare</p>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <button class="btn btn-primary" style="padding:18px;font-size:1rem;justify-content:flex-start;gap:14px"
+          onclick="window._navigate('challenge')">
+          <span style="font-size:1.6rem">🌐</span>
+          <div style="text-align:left">
+            <div style="font-weight:800">Sfida Online</div>
+            <div style="font-size:.8rem;font-weight:400;opacity:.85">Gioca in tempo reale con un amico su un altro dispositivo</div>
+          </div>
+        </button>
+        <button class="btn btn-ghost" style="padding:18px;font-size:1rem;justify-content:flex-start;gap:14px"
+          onclick="window._showLocalChallenge()">
+          <span style="font-size:1.6rem">📱</span>
+          <div style="text-align:left">
+            <div style="font-weight:800">Sfida Locale</div>
+            <div style="font-size:.8rem;font-weight:400;opacity:.85">Stesso dispositivo, a turni — serve un altro profilo</div>
+          </div>
+        </button>
+      </div>
+    </div>`);
+};
+
+window._showLocalChallenge = async () => {
   const profiles = await api.getProfiles();
   const others = profiles.filter(p => p.id !== currentProfileId);
 
   if (others.length === 0) {
     render(`
-      <button class="nav-back" onclick="window._navigate('home')">← Menu</button>
+      <button class="nav-back" onclick="window._showChallenge()">← Indietro</button>
       <div class="card" style="text-align:center">
-        <div style="font-size:3rem;margin-bottom:12px">⚔️</div>
-        <h2>Sfide</h2>
-        <p style="color:var(--muted);margin:16px 0">Serve almeno un altro profilo per sfidarsi! Crea un nuovo profilo dalla schermata iniziale.</p>
+        <div style="font-size:3rem;margin-bottom:12px">📱</div>
+        <h2>Sfida Locale</h2>
+        <p style="color:var(--muted);margin:16px 0">Serve almeno un altro profilo per sfidarsi!<br>Creane uno dalla schermata iniziale.</p>
         <div class="btn-group"><button class="btn btn-ghost" onclick="window._navigate('home')">🏠 Menu</button></div>
       </div>`);
     return;
   }
 
   render(`
-    <button class="nav-back" onclick="window._navigate('home')">← Menu</button>
-    <div class="card" style="text-align:center">
-      <div style="font-size:3rem;margin-bottom:12px">⚔️</div>
-      <h2>Sfida un amico!</h2>
+    <button class="nav-back" onclick="window._showChallenge()">← Indietro</button>
+    <div class="card" style="text-align:center;max-width:440px;margin:0 auto">
+      <div style="font-size:3rem;margin-bottom:8px">📱</div>
+      <h2 style="margin-bottom:4px">Sfida Locale</h2>
       <p style="color:var(--muted);margin-bottom:16px">Stesse domande, chi fa meglio vince!</p>
-
       <div style="text-align:left;margin-bottom:16px">
         <div class="setting-row"><label>👤 Sfida contro:</label>
           <select id="challenge-opponent">
@@ -290,7 +321,6 @@ window._showChallenge = async () => {
           </select>
         </div>
       </div>
-
       <div class="btn-group">
         <button class="btn btn-primary" onclick="window._launchChallenge()">Inizia la Sfida! ⚔️</button>
       </div>
@@ -299,7 +329,7 @@ window._showChallenge = async () => {
 
 window._launchChallenge = () => {
   const opponentId = document.getElementById('challenge-opponent')?.value;
-  const category = document.getElementById('challenge-category')?.value;
+  const category   = document.getElementById('challenge-category')?.value;
   if (!opponentId || !category) return;
   startChallenge(currentProfileId, opponentId, category);
 };

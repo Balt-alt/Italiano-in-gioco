@@ -2,9 +2,13 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const crypto = require('crypto');
+const http = require('http');
+const { Server: SocketServer } = require('socket.io');
 const db = require('./db');
 
 const app = express();
+const httpServer = http.createServer(app);
+const io = new SocketServer(httpServer, { cors: { origin: '*' } });
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
@@ -305,8 +309,129 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => {
+// ══════════════════════════════════════
+// SOCKET.IO — SFIDE ONLINE IN TEMPO REALE
+// ══════════════════════════════════════
+const rooms = new Map(); // code → { code, host, players:[{id,profileId,name,score,finished,answeredCount}], questions, status, cat, difficulty, createdAt }
+
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O/1/I/L
+function genRoomCode() {
+  let code;
+  do { code = Array.from({ length: 4 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join(''); }
+  while (rooms.has(code));
+  return code;
+}
+
+// Pulizia stanze vecchie ogni 30 minuti
+setInterval(() => {
+  const limit = Date.now() - 2 * 60 * 60 * 1000;
+  for (const [code, room] of rooms) if (room.createdAt < limit) rooms.delete(code);
+}, 30 * 60 * 1000);
+
+io.on('connection', (socket) => {
+  let myRoom = null; // codice stanza corrente del socket
+
+  function broadcastRoom(code) {
+    const room = rooms.get(code);
+    if (!room) return;
+    io.to(code).emit('room-update', {
+      code: room.code,
+      cat: room.cat,
+      difficulty: room.difficulty,
+      status: room.status,
+      players: room.players.map(p => ({ name: p.name, score: p.score, finished: p.finished, isHost: p.id === room.host }))
+    });
+  }
+
+  function leaveCurrentRoom() {
+    if (!myRoom) return;
+    const room = rooms.get(myRoom);
+    if (room) {
+      room.players = room.players.filter(p => p.id !== socket.id);
+      if (room.players.length === 0) {
+        rooms.delete(myRoom);
+      } else {
+        room.host = room.players[0].id; // nuovo host
+        room.status = 'waiting';
+        io.to(myRoom).emit('player-left', { message: 'L\'avversario ha abbandonato la partita.' });
+        broadcastRoom(myRoom);
+      }
+    }
+    socket.leave(myRoom);
+    myRoom = null;
+  }
+
+  socket.on('create-room', ({ profileId, name, cat, difficulty, questions }) => {
+    leaveCurrentRoom();
+    const code = genRoomCode();
+    rooms.set(code, {
+      code, host: socket.id,
+      players: [{ id: socket.id, profileId, name, score: 0, finished: false, answeredCount: 0 }],
+      questions: questions || [],
+      status: 'waiting',
+      cat, difficulty,
+      createdAt: Date.now()
+    });
+    socket.join(code);
+    myRoom = code;
+    socket.emit('room-created', { code });
+    broadcastRoom(code);
+  });
+
+  socket.on('join-room', ({ code, profileId, name }) => {
+    code = (code || '').toUpperCase().trim();
+    const room = rooms.get(code);
+    if (!room) return socket.emit('room-error', 'Stanza non trovata. Controlla il codice.');
+    if (room.status !== 'waiting') return socket.emit('room-error', 'La partita è già iniziata.');
+    if (room.players.length >= 2) return socket.emit('room-error', 'Stanza piena (2/2).');
+    if (room.players.find(p => p.id === socket.id)) return;
+    leaveCurrentRoom();
+    room.players.push({ id: socket.id, profileId, name, score: 0, finished: false, answeredCount: 0 });
+    socket.join(code);
+    myRoom = code;
+    broadcastRoom(code);
+  });
+
+  socket.on('start-game', ({ code }) => {
+    const room = rooms.get(code);
+    if (!room || room.host !== socket.id) return;
+    if (room.players.length < 2) return socket.emit('room-error', 'Aspetta che un avversario entri nella stanza.');
+    if (room.status !== 'waiting') return;
+    room.status = 'playing';
+    io.to(code).emit('game-start', { questions: room.questions });
+  });
+
+  socket.on('submit-answer', ({ code, correct }) => {
+    const room = rooms.get(code);
+    if (!room || room.status !== 'playing') return;
+    const player = room.players.find(p => p.id === socket.id);
+    if (!player || player.finished) return;
+    if (correct) player.score++;
+    player.answeredCount++;
+    if (player.answeredCount >= room.questions.length) player.finished = true;
+    io.to(code).emit('score-update', {
+      players: room.players.map(p => ({ name: p.name, score: p.score, finished: p.finished }))
+    });
+    if (room.players.every(p => p.finished)) {
+      room.status = 'finished';
+      const sorted = [...room.players].sort((a, b) => b.score - a.score);
+      const winner = sorted[0].score > sorted[1].score ? sorted[0].name : null;
+      io.to(code).emit('game-end', {
+        players: room.players.map(p => ({ name: p.name, score: p.score, profileId: p.profileId })),
+        winner,
+        total: room.questions.length
+      });
+      setTimeout(() => rooms.delete(code), 60 * 1000);
+    }
+  });
+
+  socket.on('leave-room', ({ code }) => leaveCurrentRoom());
+  socket.on('disconnect', () => leaveCurrentRoom());
+});
+
+httpServer.listen(PORT, () => {
   console.log(`\n  🇮🇹 Italiano in Gioco!`);
   console.log(`  ✅ Server attivo su http://localhost:${PORT}`);
-  console.log(`  📦 Database: ${path.join(__dirname, 'data.db')}\n`);
+  console.log(`  📦 Database: ${path.join(__dirname, 'data.db')}`);
+  console.log(`  ⚔️  Socket.io pronto per sfide online\n`);
 });
