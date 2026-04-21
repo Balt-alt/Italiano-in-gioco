@@ -1,0 +1,270 @@
+// ══════════════════════════════════════
+// BANCA DOMANDE — MATEMATICA 5ª Elementare
+// ══════════════════════════════════════
+
+// ── Problemi matematici ──────────────────────────────────────
+export const PROBLEMI = {
+  facile: [
+    { q:'Marco ha 24 figurine. Ne regala 9 al suo amico. Quante figurine ha ora?', a:'15', w:['13','33','17'], h:'Sottrai le figurine regalate', x:'24 - 9 = 15' },
+    { q:'In un vaso ci sono 36 fiori. Se ne aggiungono 17. Quanti ce ne sono in tutto?', a:'53', w:['43','52','19'], h:'Somma i fiori', x:'36 + 17 = 53' },
+    { q:'Una scatola contiene 48 matite, divise in 6 gruppi uguali. Quante matite ci sono in ogni gruppo?', a:'8', w:['6','9','7'], h:'Dividi le matite per i gruppi', x:'48 ÷ 6 = 8' },
+    { q:'Un treno ha 8 vagoni, ciascuno con 12 posti. Quanti posti ci sono in tutto?', a:'96', w:['88','94','100'], h:'Moltiplica vagoni × posti', x:'8 × 12 = 96' },
+    { q:'Luca legge 15 pagine al giorno. Quante pagine leggerà in una settimana?', a:'105', w:['100','90','120'], h:'Una settimana = 7 giorni', x:'15 × 7 = 105' },
+    { q:'In una scuola ci sono 240 bambini divisi in 8 classi uguali. Quanti alunni ci sono per classe?', a:'30', w:['28','32','35'], h:'Dividi i bambini per le classi', x:'240 ÷ 8 = 30' },
+    { q:'Sofia ha 35 euro. Compra un libro che costa 12 euro. Quanti euro le rimangono?', a:'23', w:['22','47','25'], h:'Sottrai il costo dal budget', x:'35 - 12 = 23' },
+    { q:'In un prato ci sono 18 pecore e 27 mucche. Quanti animali ci sono in tutto?', a:'45', w:['44','46','40'], h:'Somma i due tipi di animali', x:'18 + 27 = 45' },
+    { q:'Un album ha 96 pagine. Marco ha già usato 58 pagine. Quante pagine restano?', a:'38', w:['36','40','42'], h:'Sottrai le pagine usate', x:'96 - 58 = 38' },
+    { q:'Una classe ha 25 alunni. Per la gita servono 3 euro ciascuno. Quanto si raccoglie in tutto?', a:'75', w:['70','80','65'], h:'Moltiplica alunni × costo', x:'25 × 3 = 75 euro' },
+    { q:'Giulia ha 120 cm di nastro. Lo divide in pezzi da 15 cm. Quanti pezzi ottiene?', a:'8', w:['7','9','6'], h:'Dividi la lunghezza totale per quella di ogni pezzo', x:'120 ÷ 15 = 8' },
+    { q:'In una pescheria arrivano 84 kg di pesce. Ne vengono venduti 47 kg. Quanti kg rimangono?', a:'37', w:['35','39','43'], h:'Sottrai il venduto dal totale', x:'84 - 47 = 37' },
+    { q:'Un panificio produce 150 pagnotte al giorno. In 4 giorni quante ne produce?', a:'600', w:['450','500','650'], h:'Moltiplica le pagnotte per i giorni', x:'150 × 4 = 600' },
+    { q:'In un sacchetto ci sono 72 caramelle da dividere equamente tra 9 bambini. Quante ne riceve ciascuno?', a:'8', w:['7','9','6'], h:'Dividi le caramelle per i bambini', x:'72 ÷ 9 = 8' },
+    { q:'Un pullman ha 45 posti. Salgono 32 passeggeri. Quanti posti rimangono liberi?', a:'13', w:['12','14','17'], h:'Sottrai i passeggeri dai posti totali', x:'45 - 32 = 13' },
+  ],
+  medio: [
+    { q:'Anna ha 250 euro. Compra una giacca da 85 euro e delle scarpe da 120 euro. Quanto le rimane?', a:'45 euro', w:['55 euro','35 euro','40 euro'], h:'Somma i costi, poi sottrai dal totale', x:'85 + 120 = 205; 250 - 205 = 45 euro' },
+    { q:'Un treno parte con 180 passeggeri. Alla prima fermata scendono 45 e ne salgono 30. Quanti ce ne sono ora?', a:'165', w:['155','175','160'], h:'Prima sottrai chi scende, poi aggiungi chi sale', x:'180 - 45 + 30 = 165' },
+    { q:'Una macchina percorre 85 km/h. Quanti km percorre in 4 ore?', a:'340 km', w:['320 km','360 km','350 km'], h:'Moltiplica la velocità per le ore', x:'85 × 4 = 340 km' },
+    { q:'Una scuola compra 12 pacchi di fogli da 500 fogli ciascuno. Ne vengono usati 1800. Quanti ne rimangono?', a:'4200', w:['3800','4000','4600'], h:'Calcola il totale, poi sottrai quelli usati', x:'12 × 500 = 6000; 6000 - 1800 = 4200' },
+    { q:'Un albergo ha 24 camere doppie e 12 camere triple. Quanti ospiti può accogliere in tutto?', a:'84', w:['80','88','72'], h:'Calcola i posti separatamente, poi somma', x:'24×2 + 12×3 = 48 + 36 = 84' },
+    { q:'Sara compra 4 libri da 8 euro ciascuno e paga con un biglietto da 50 euro. Quanto riceve di resto?', a:'18 euro', w:['20 euro','16 euro','22 euro'], h:'Calcola il totale, poi il resto', x:'4 × 8 = 32; 50 - 32 = 18 euro' },
+    { q:'Marco guadagna 15 euro/ora e lavora 6 ore al giorno per 5 giorni. Quanto guadagna in tutto?', a:'450 euro', w:['400 euro','500 euro','420 euro'], h:'Calcola le ore totali, poi moltiplica per il compenso', x:'6 × 5 = 30 ore; 30 × 15 = 450 euro' },
+    { q:'Un campo rettangolare è lungo 85 m e largo 60 m. Qual è il suo perimetro?', a:'290 m', w:['280 m','300 m','270 m'], h:'P = 2 × (base + altezza)', x:'2 × (85 + 60) = 2 × 145 = 290 m' },
+    { q:'In un negozio arrivano 36 scatole con 6 paia di scarpe ciascuna. Ne vengono vendute 74 paia. Quante paia rimangono?', a:'142', w:['140','144','148'], h:'Calcola il totale, poi sottrai le vendute', x:'36 × 6 = 216; 216 - 74 = 142' },
+    { q:'Una vasca contiene 360 litri. Ogni ora ne escono 45 litri. Dopo 4 ore, quanti litri ci sono?', a:'180 litri', w:['160 litri','200 litri','220 litri'], h:'Calcola i litri usciti, poi sottrai', x:'45 × 4 = 180; 360 - 180 = 180 litri' },
+    { q:'In una classe di 28 alunni, 3/4 ha svolto i compiti. Quanti alunni li hanno svolti?', a:'21', w:['18','24','20'], h:'Calcola 3/4 di 28', x:'28 ÷ 4 × 3 = 7 × 3 = 21' },
+    { q:'Una scalinata ha 18 gradini, ciascuno alto 16 cm. Quanto è alta in totale?', a:'288 cm', w:['280 cm','296 cm','252 cm'], h:'Moltiplica i gradini per l\'altezza', x:'18 × 16 = 288 cm' },
+    { q:'Lucia cammina 45 minuti al giorno. In due settimane quanti minuti cammina in tutto?', a:'630 minuti', w:['560 minuti','700 minuti','450 minuti'], h:'Calcola i giorni totali, poi moltiplica', x:'45 × 14 = 630 minuti' },
+    { q:'Un tratto di strada è lungo 2,4 km. Se ne sono percorsi 1200 m, quanti metri mancano?', a:'1200 m', w:['1400 m','1000 m','800 m'], h:'Converti km in m, poi sottrai', x:'2,4 km = 2400 m; 2400 - 1200 = 1200 m' },
+    { q:'Un negozio ha 5 cassetti con 48 monete ciascuno. Viene tenuto 1/4 delle monete. Quante monete rimangono?', a:'180', w:['60','120','200'], h:'Calcola il totale, poi 3/4 di esse', x:'5 × 48 = 240; 240 × 3/4 = 180' },
+  ],
+  difficile: [
+    { q:'Un negoziante compra 80 kg di frutta a 1,20 €/kg e la rivende a 1,80 €/kg. Quanto guadagna?', a:'48 euro', w:['40 euro','60 euro','56 euro'], h:'Guadagno = (prezzo vendita − prezzo acquisto) × quantità', x:'(1,80 - 1,20) × 80 = 0,60 × 80 = 48 euro' },
+    { q:'Una scuola ha 360 alunni. Il 25% pratica uno sport. Quanti alunni NON praticano sport?', a:'270', w:['90','260','280'], h:'Il 75% non pratica sport', x:'360 × 75% = 360 × 0,75 = 270' },
+    { q:'In una classe di 25 alunni, 2/5 sono femmine. Quante sono le femmine?', a:'10', w:['12','8','15'], h:'Calcola i 2/5 di 25', x:'25 ÷ 5 × 2 = 10 femmine' },
+    { q:'Un treno percorre 240 km in 3 ore. Quanti km percorrerà in 5 ore alla stessa velocità?', a:'400 km', w:['360 km','450 km','480 km'], h:'Calcola prima la velocità oraria', x:'240 ÷ 3 = 80 km/h; 80 × 5 = 400 km' },
+    { q:'Un negozio applica uno sconto del 25% su un gioco che costa 48 euro. Quanto si paga?', a:'36 euro', w:['38 euro','40 euro','34 euro'], h:'Calcola il 25% e sottrailo dal prezzo', x:'48 × 25% = 12; 48 - 12 = 36 euro' },
+    { q:'Il perimetro di un quadrato è 52 cm. Qual è la sua area?', a:'169 cm²', w:['144 cm²','196 cm²','156 cm²'], h:'Trova prima il lato, poi calcola l\'area', x:'Lato = 52 ÷ 4 = 13 cm; Area = 13² = 169 cm²' },
+    { q:'Un cuoco usa 3/4 di kg di farina per ogni torta. Quante torte può fare con 6 kg di farina?', a:'8', w:['6','9','7'], h:'Dividi il totale per la quantità usata per ogni torta', x:'6 ÷ (3/4) = 6 × 4/3 = 8 torte' },
+    { q:'Una cisterna contiene 1800 litri. Ogni giorno se ne consumano 125 litri. Dopo quanti giorni sarà esaurita?', a:'14 giorni', w:['12 giorni','15 giorni','16 giorni'], h:'Dividi il totale per il consumo giornaliero', x:'1800 ÷ 125 = 14,4 → 14 giorni interi' },
+    { q:'In una maratona di 42 km, un atleta ha percorso 5/6 del percorso. Quanti km mancano al traguardo?', a:'7 km', w:['6 km','8 km','5 km'], h:'Calcola quanto ha percorso, poi sottrai', x:'42 × 5/6 = 35 km; 42 - 35 = 7 km' },
+    { q:'Un rettangolo ha perimetro 56 cm e base 18 cm. Qual è la sua area?', a:'180 cm²', w:['168 cm²','200 cm²','192 cm²'], h:'Ricava l\'altezza dal perimetro', x:'h = 56/2 - 18 = 28 - 18 = 10 cm; Area = 18 × 10 = 180 cm²' },
+    { q:'Un negozio vende 3 quaderni a 1,50 € e 5 penne a 0,80 €. Qual è la spesa totale?', a:'8,50 euro', w:['8 euro','9 euro','7,50 euro'], h:'Calcola le due spese separatamente', x:'3 × 1,50 + 5 × 0,80 = 4,50 + 4,00 = 8,50 euro' },
+    { q:'Su una cartina con scala 1:100.000, una distanza di 5 cm corrisponde a quanti km reali?', a:'5 km', w:['50 km','0,5 km','500 km'], h:'5 cm × 100.000 = cm reali → converti in km', x:'5 × 100.000 = 500.000 cm = 5000 m = 5 km' },
+    { q:'Due treni si trovano a 360 km di distanza e viaggiano l\'uno verso l\'altro: uno a 90 km/h e l\'altro a 60 km/h. Dopo quanto si incontrano?', a:'2,4 ore', w:['2 ore','3 ore','2,5 ore'], h:'Somma le velocità, poi dividi la distanza', x:'90 + 60 = 150 km/h; 360 ÷ 150 = 2,4 ore' },
+    { q:'Una piscina è lunga 10 m, larga 4 m e profonda 1,5 m. Quanti litri contiene? (1 m³ = 1000 L)', a:'60.000 litri', w:['40.000 litri','50.000 litri','80.000 litri'], h:'Volume = l × l × h; poi × 1000', x:'10 × 4 × 1,5 = 60 m³; × 1000 = 60.000 L' },
+    { q:'Un articolo costa 72 euro, con un guadagno del 20% sul costo di acquisto. Quanto è stato pagato?', a:'60 euro', w:['58 euro','64 euro','68 euro'], h:'72 = 120% del costo', x:'Costo = 72 ÷ 1,20 = 60 euro' },
+  ],
+};
+
+// ── Quiz Geometria (teoria) ──────────────────────────────────
+export const GEO_QUIZ = {
+  facile: [
+    { q:'Quanti lati ha un quadrato?', a:'4', w:['3','5','6'], h:'Il quadrato è un poligono regolare', x:'Il quadrato ha 4 lati tutti uguali e 4 angoli retti da 90°.' },
+    { q:'Come si chiama la figura con 3 lati?', a:'Triangolo', w:['Quadrato','Rettangolo','Pentagono'], h:'Tri- = tre', x:'Il triangolo ha 3 lati e 3 angoli. La somma degli angoli interni è sempre 180°.' },
+    { q:'Quale figura ha tutti e 4 i lati uguali e 4 angoli retti?', a:'Quadrato', w:['Rettangolo','Rombo','Trapezio'], h:'Tutti lati uguali E angoli retti…', x:'Il quadrato ha 4 lati uguali e 4 angoli retti. Il rombo ha 4 lati uguali ma angoli non retti.' },
+    { q:'Come si chiama la distanza dal centro del cerchio al bordo?', a:'Raggio', w:['Diametro','Circonferenza','Corda'], h:'Dal CENtro al bordo', x:'Il raggio (r) è la distanza dal centro alla circonferenza. Il diametro è il doppio del raggio.' },
+    { q:'Un angolo retto misura:', a:'90°', w:['45°','180°','60°'], h:'Come l\'angolo degli angoli del quaderno', x:'L\'angolo retto misura esattamente 90°. È l\'angolo formato da due lati perpendicolari.' },
+    { q:'Il perimetro è:', a:'La somma di tutti i lati', w:['Lo spazio interno','Il numero di lati','La lunghezza di un solo lato'], h:'Peri- = "intorno"', x:'Il perimetro misura il contorno di una figura: si ottiene sommando tutti i lati.' },
+    { q:'L\'area è:', a:'Lo spazio interno di una figura', w:['La somma dei lati','Il numero degli angoli','Il perimetro diviso per 2'], h:'Area = spazio occupato', x:'L\'area misura la superficie occupata. Si misura in unità quadrate: cm², m², ecc.' },
+    { q:'Un triangolo equilatero ha:', a:'3 lati tutti uguali', w:['2 lati uguali','Nessun lato uguale','1 angolo retto'], h:'Equi- = uguale, latero = lato', x:'Il triangolo equilatero ha 3 lati uguali e 3 angoli di 60° ciascuno.' },
+    { q:'Quanti assi di simmetria ha il quadrato?', a:'4', w:['2','1','0'], h:'Conta tutti i modi di piegarlo in modo simmetrico', x:'Il quadrato ha 4 assi di simmetria: 2 per i lati e 2 per le diagonali.' },
+    { q:'Come si chiama il poligono con 5 lati?', a:'Pentagono', w:['Esagono','Ottagono','Quadrilatero'], h:'Penta- = cinque', x:'Il pentagono ha 5 lati e 5 angoli. Penta viene dal greco e significa cinque.' },
+  ],
+  medio: [
+    { q:'Formula del perimetro del rettangolo:', a:'P = 2 × (base + altezza)', w:['P = base × altezza','P = 4 × base','P = base + altezza'], h:'Il rettangolo ha 2 coppie di lati uguali', x:'P = 2(b + h): ci sono due basi uguali e due altezze uguali.' },
+    { q:'Formula dell\'area del rettangolo:', a:'A = base × altezza', w:['A = 2 × (base + altezza)','A = base + altezza','A = (base × altezza) / 2'], h:'Per i rettangoli si moltiplicano le due dimensioni', x:'A = b × h. Le due dimensioni si moltiplicano tra loro.' },
+    { q:'Formula dell\'area del triangolo:', a:'A = (base × altezza) / 2', w:['A = base × altezza','A = base + altezza','A = 2 × (base + altezza)'], h:'È la metà del rettangolo circoscritto', x:'A = (b × h) / 2. Il triangolo occupa metà del rettangolo con stessa base e altezza.' },
+    { q:'Un triangolo isoscele ha:', a:'2 lati uguali', w:['3 lati uguali','Nessun lato uguale','4 lati uguali'], h:'Iso- = uguale', x:'Il triangolo isoscele ha 2 lati uguali (gambe) e uno diverso (base).' },
+    { q:'Quanti assi di simmetria ha un rettangolo (non quadrato)?', a:'2', w:['4','0','1'], h:'Uno per i lati lunghi, uno per i corti', x:'Il rettangolo ha 2 assi: uno parallelo ai lati lunghi e uno parallelo ai lati corti.' },
+    { q:'Il rombo ha:', a:'4 lati uguali ma angoli non necessariamente retti', w:['4 lati uguali e 4 angoli retti','2 coppie di lati uguali','3 lati uguali'], h:'È diverso dal quadrato per gli angoli', x:'Il rombo ha 4 lati uguali, ma gli angoli non sono necessariamente retti.' },
+    { q:'L\'altezza di un triangolo è:', a:'Il segmento perpendicolare dalla base al vertice opposto', w:['La lunghezza del lato più lungo','La somma dei lati','La metà della base'], h:'Deve essere perpendicolare alla base', x:'L\'altezza è il segmento perpendicolare che va dalla base al vertice opposto.' },
+    { q:'Quale figura ha 2 coppie di lati paralleli ma nessun angolo retto?', a:'Parallelogramma', w:['Rettangolo','Trapezio','Rombo'], h:'Due coppie di lati paralleli, ma angoli obliqui', x:'Il parallelogramma ha 2 coppie di lati paralleli. Il rettangolo è un caso speciale con angoli retti.' },
+    { q:'Il trapezio ha:', a:'Solo 1 coppia di lati paralleli', w:['2 coppie di lati paralleli','4 lati uguali','Nessun lato parallelo'], h:'Tra i quadrilateri, il trapezio ha UN solo paio di lati paralleli', x:'Il trapezio ha esattamente una coppia di lati paralleli (le basi). Il parallelogramma ne ha due.' },
+    { q:'Come si chiama la linea che divide il cerchio in due parti uguali passando per il centro?', a:'Diametro', w:['Raggio','Corda','Asse'], h:'Passa per il centro ed è il doppio del raggio', x:'Il diametro passa per il centro del cerchio. d = 2 × r.' },
+  ],
+  difficile: [
+    { q:'Formula dell\'area del trapezio:', a:'A = ((B + b) × h) / 2', w:['A = base × altezza','A = (B × h) / 2','A = 2 × (B + b)'], h:'Si sommano le due basi…', x:'A = (B + b) × h / 2, dove B è la base maggiore, b la base minore.' },
+    { q:'Formula dell\'area del cerchio:', a:'A = π × r²', w:['A = 2 × π × r','A = π × d','A = π × r'], h:'Dipende dal raggio al quadrato', x:'A = π × r². Esempio: r = 5 cm → A ≈ 3,14 × 25 = 78,5 cm².' },
+    { q:'Formula della circonferenza del cerchio:', a:'C = 2 × π × r', w:['C = π × r²','C = π × r','C = 4 × r'], h:'Dipende dal raggio (non al quadrato)', x:'C = 2πr = πd. Esempio: r = 7 cm → C ≈ 2 × 3,14 × 7 = 43,96 cm.' },
+    { q:'Quanti assi di simmetria ha il cerchio?', a:'Infiniti', w:['0','4','2'], h:'Qualsiasi diametro è un asse di simmetria', x:'Il cerchio ha infiniti assi di simmetria: qualsiasi diametro lo è.' },
+    { q:'La formula del volume del parallelepipedo è:', a:'V = lunghezza × larghezza × altezza', w:['V = 2 × (l + w + h)','V = l + w + h','V = l × w'], h:'Le tre dimensioni si moltiplicano', x:'V = l × w × h. Il volume si misura in unità cubiche: cm³, m³, ecc.' },
+    { q:'Due triangoli congruenti sono:', a:'Uguali per forma e dimensione', w:['Uguali per forma ma non per dimensione','Identici nei soli angoli','Identici nella sola area'], h:'Congruente = identico in tutto', x:'Congruenti = stessa forma E stessa dimensione. Simili = stessa forma, dimensioni diverse.' },
+    { q:'Formula dell\'area del rombo:', a:'A = (D × d) / 2', w:['A = D × d','A = 4 × l','A = (D + d) × l'], h:'D e d sono le diagonali', x:'A = (D × d) / 2, dove D e d sono le due diagonali del rombo.' },
+    { q:'Un rettangolo ha la base doppia dell\'altezza. Se il perimetro è 60 cm, qual è l\'area?', a:'200 cm²', w:['150 cm²','250 cm²','180 cm²'], h:'Dalla formula del perimetro ricava le dimensioni', x:'h + 2h = 30 → h = 10 cm, b = 20 cm; A = 20 × 10 = 200 cm².' },
+    { q:'Un quadrato e un rettangolo hanno area 36 cm². Il rettangolo ha base 9 cm. Qual è la sua altezza?', a:'4 cm', w:['6 cm','3 cm','5 cm'], h:'A = b × h', x:'h = 36 ÷ 9 = 4 cm.' },
+    { q:'Un rombo ha diagonali di 8 cm e 6 cm. Qual è la sua area?', a:'24 cm²', w:['48 cm²','28 cm²','20 cm²'], h:'A = (d1 × d2) / 2', x:'A = (8 × 6) / 2 = 48 / 2 = 24 cm².' },
+  ],
+};
+
+// ── Quiz Frazioni ────────────────────────────────────────────
+export const FRAZ_QUIZ = {
+  facile: [
+    { q:'Quale frazione rappresenta "tre quarti"?', a:'3/4', w:['4/3','3/3','1/4'], h:'Numeratore = parti prese, denominatore = parti totali', x:'3/4: numeratore 3 (parti prese), denominatore 4 (parti totali).' },
+    { q:'Quale frazione è equivalente a 1/2?', a:'2/4', w:['2/3','1/4','3/4'], h:'Moltiplica numeratore e denominatore per 2', x:'1/2 = 2/4 = 3/6 = 4/8… Stesso valore, frazioni diverse.' },
+    { q:'Una pizza è divisa in 8 parti uguali. Marco ne mangia 3. Che frazione ha mangiato?', a:'3/8', w:['5/8','3/5','1/3'], h:'Parti mangiate su parti totali', x:'3 parti su 8 totali → 3/8.' },
+    { q:'Qual è la frazione 1/4 scritta come numero decimale?', a:'0,25', w:['0,4','2,5','0,14'], h:'1 diviso 4 = ?', x:'1 ÷ 4 = 0,25. Oppure: 1/4 = 25/100 = 0,25.' },
+    { q:'Che valore ha la frazione 1/1?', a:'1 intero', w:['La metà','Un quarto','Zero'], h:'Il numeratore è uguale al denominatore', x:'1/1 = 1 intero. Quando numeratore = denominatore, la frazione vale 1.' },
+    { q:'Qual è la frazione semplificata di 4/8?', a:'1/2', w:['2/4','4/4','3/6'], h:'Dividi numeratore e denominatore per 4', x:'4/8 ÷ 4/4 = 1/2. È la forma ridotta ai minimi termini.' },
+    { q:'In un mazzo di 52 carte, 13 sono cuori. Che frazione sono i cuori?', a:'1/4', w:['1/3','1/2','1/5'], h:'13/52 = ?/? (semplifica!)', x:'13/52 = 1/4 (MCD = 13).' },
+    { q:'Il numero in basso della frazione si chiama:', a:'Denominatore', w:['Numeratore','Quoziente','Divisore'], h:'Deno- = sotto', x:'Il denominatore (in basso) indica in quante parti è diviso il tutto. Il numeratore (in alto) indica quante parti si prendono.' },
+    { q:'Quale delle seguenti è una frazione propria?', a:'3/5', w:['7/4','5/5','10/3'], h:'In una frazione propria: numeratore < denominatore', x:'3/5 è propria (3 < 5). Le frazioni proprie sono minori di 1.' },
+    { q:'La metà di 3/4 è:', a:'3/8', w:['3/2','6/4','1/4'], h:'Moltiplica per 1/2', x:'3/4 × 1/2 = 3/8. La metà di una frazione si ottiene raddoppiando il denominatore.' },
+  ],
+  medio: [
+    { q:'Quale frazione è equivalente a 2/3?', a:'4/6', w:['3/4','6/10','2/4'], h:'Moltiplica numeratore e denominatore per 2', x:'2/3 = 4/6 (×2). Frazioni equivalenti: stessa moltiplicazione per numeratore e denominatore.' },
+    { q:'Ordina dalla più piccola: 3/4, 1/2, 2/3', a:'1/2 < 2/3 < 3/4', w:['3/4 < 2/3 < 1/2','2/3 < 1/2 < 3/4','1/2 < 3/4 < 2/3'], h:'Riduci allo stesso denominatore (12)', x:'6/12 < 8/12 < 9/12 → 1/2 < 2/3 < 3/4.' },
+    { q:'1/4 + 2/4 = ?', a:'3/4', w:['3/8','1/2','3/2'], h:'Stesso denominatore: somma solo i numeratori', x:'1/4 + 2/4 = (1+2)/4 = 3/4.' },
+    { q:'3/5 di 40 è:', a:'24', w:['20','25','30'], h:'Dividi per 5, poi moltiplica per 3', x:'40 ÷ 5 = 8; 8 × 3 = 24.' },
+    { q:'Semplifica 12/16:', a:'3/4', w:['6/8','4/5','2/3'], h:'MCD(12, 16) = 4', x:'12/4 = 3; 16/4 = 4 → 3/4.' },
+    { q:'3/4 − 1/4 = ?', a:'1/2', w:['2/4 (non semplificata)','2/8','4/4'], h:'Stesso denominatore: sottrai i numeratori', x:'3/4 - 1/4 = 2/4 = 1/2.' },
+    { q:'Quale frazione è maggiore: 2/3 o 3/5?', a:'2/3', w:['3/5','Sono uguali','Non si può dire'], h:'Riduci allo stesso denominatore (15)', x:'2/3 = 10/15; 3/5 = 9/15. Quindi 2/3 > 3/5.' },
+    { q:'2/3 × 3 = ?', a:'2', w:['6/3','3/2','2/9'], h:'Moltiplica il numeratore per il numero intero', x:'2/3 × 3 = 6/3 = 2.' },
+    { q:'La frazione complementare di 1/3 (a 1) è:', a:'2/3', w:['1/3','3/1','1/2'], h:'Le due frazioni devono sommare 1', x:'1 - 1/3 = 3/3 - 1/3 = 2/3.' },
+    { q:'Semplifica 18/24:', a:'3/4', w:['9/12','6/8','2/3'], h:'MCD(18, 24) = 6', x:'18/6 = 3; 24/6 = 4 → 3/4.' },
+  ],
+  difficile: [
+    { q:'1/2 + 1/3 = ?', a:'5/6', w:['2/5','2/6','3/5'], h:'Riduci allo stesso denominatore (6)', x:'3/6 + 2/6 = 5/6.' },
+    { q:'3/4 − 1/3 = ?', a:'5/12', w:['2/12','2/7','4/12'], h:'MCM(4, 3) = 12', x:'9/12 - 4/12 = 5/12.' },
+    { q:'2/3 × 3/4 = ?', a:'1/2', w:['6/12','5/12','2/4'], h:'Moltiplica numeratori e denominatori', x:'(2×3)/(3×4) = 6/12 = 1/2.' },
+    { q:'3/4 ÷ 3/8 = ?', a:'2', w:['1/2','9/32','8/9'], h:'Per dividere, moltiplica per il reciproco', x:'3/4 × 8/3 = 24/12 = 2.' },
+    { q:'Converti in decimale: 7/4', a:'1,75', w:['1,4','2,5','0,75'], h:'7 ÷ 4 = ?', x:'7 ÷ 4 = 1,75 (= 1 intero e 3/4 = 0,75).' },
+    { q:'Quale percentuale corrisponde a 3/4?', a:'75%', w:['25%','50%','80%'], h:'3/4 × 100 = ?', x:'3/4 = 75/100 = 75%.' },
+    { q:'Se 2/5 di un numero è 16, qual è il numero?', a:'40', w:['32','48','36'], h:'Trova prima 1/5, poi moltiplica per 5', x:'1/5 = 16 ÷ 2 = 8; intero = 8 × 5 = 40.' },
+    { q:'Quanto fa 2 e 1/3 + 1 e 1/2?', a:'3 e 5/6', w:['3 e 1/5','4 e 1/6','3 e 2/5'], h:'Somma gli interi e poi le frazioni separatamente', x:'2+1=3; 1/3+1/2 = 2/6+3/6 = 5/6 → 3 e 5/6.' },
+    { q:'(3/4 × 8/9) + 1/3 = ?', a:'1', w:['5/6','7/9','4/3'], h:'Prima la moltiplicazione, poi la somma', x:'3/4 × 8/9 = 2/3; 2/3 + 1/3 = 1.' },
+    { q:'Qual è il numero intero più vicino a 7/3?', a:'2', w:['3','1','4'], h:'7/3 ≈ 2,33…', x:'7 ÷ 3 = 2,33… Il numero intero più vicino è 2.' },
+  ],
+};
+
+// ── Quiz Misure ──────────────────────────────────────────────
+export const MISURE_QUIZ = {
+  facile: [
+    { q:'3 km = ___ m', a:'3000', w:['300','30','30.000'], h:'1 km = 1000 m', x:'3 × 1000 = 3000 m.' },
+    { q:'500 cm = ___ m', a:'5', w:['0,5','50','5000'], h:'100 cm = 1 m', x:'500 ÷ 100 = 5 m.' },
+    { q:'2 kg = ___ g', a:'2000', w:['200','20','20.000'], h:'1 kg = 1000 g', x:'2 × 1000 = 2000 g.' },
+    { q:'3 L = ___ cL', a:'300', w:['30','3000','0,3'], h:'1 L = 100 cL', x:'3 × 100 = 300 cL.' },
+    { q:'1 ora = ___ minuti', a:'60', w:['24','100','3600'], h:'Ogni ora si divide in 60 parti', x:'1 ora = 60 minuti = 3600 secondi.' },
+    { q:'250 m = ___ km', a:'0,25', w:['2,5','25','0,025'], h:'1 km = 1000 m → dividi per 1000', x:'250 ÷ 1000 = 0,25 km.' },
+    { q:'4000 g = ___ kg', a:'4', w:['40','400','0,4'], h:'1 kg = 1000 g → dividi per 1000', x:'4000 ÷ 1000 = 4 kg.' },
+    { q:'2 m = ___ cm', a:'200', w:['20','2000','0,02'], h:'1 m = 100 cm', x:'2 × 100 = 200 cm.' },
+    { q:'1,5 L = ___ mL', a:'1500', w:['150','15.000','0,15'], h:'1 L = 1000 mL', x:'1,5 × 1000 = 1500 mL.' },
+    { q:'90 minuti = ___', a:'1 ora e 30 minuti', w:['2 ore','1 ora e 20 minuti','0 ore e 90 minuti'], h:'60 min = 1 ora, restano…', x:'90 = 60 + 30 → 1 ora e 30 minuti.' },
+  ],
+  medio: [
+    { q:'2,5 km = ___ m', a:'2500', w:['250','25.000','2,5'], h:'1 km = 1000 m', x:'2,5 × 1000 = 2500 m.' },
+    { q:'3 hm = ___ m', a:'300', w:['30','3000','0,3'], h:'1 hm = 100 m', x:'3 × 100 = 300 m.' },
+    { q:'4500 g = ___ kg e ___ g', a:'4 kg e 500 g', w:['5 kg e 0 g','4 kg e 50 g','45 kg e 0 g'], h:'1 kg = 1000 g', x:'4500 ÷ 1000 = 4 resto 500 → 4 kg e 500 g.' },
+    { q:'3 h e 45 min = ___ minuti totali', a:'225', w:['180','245','200'], h:'Converti le ore in minuti, poi somma', x:'3 × 60 + 45 = 180 + 45 = 225 minuti.' },
+    { q:'5 dm = ___ mm', a:'500', w:['50','5000','0,5'], h:'1 dm = 10 cm = 100 mm', x:'5 dm = 50 cm = 500 mm.' },
+    { q:'Ordina dal più piccolo al più grande: 1 km, 1200 m, 0,8 km', a:'0,8 km → 1 km → 1200 m', w:['1 km → 0,8 km → 1200 m','1200 m → 1 km → 0,8 km','0,8 km → 1200 m → 1 km'], h:'Converti tutto in metri', x:'800 m < 1000 m < 1200 m.' },
+    { q:'2 q (quintali) = ___ kg', a:'200', w:['20','2000','2'], h:'1 q = 100 kg', x:'2 × 100 = 200 kg.' },
+    { q:'2,5 L = ___ dL', a:'25', w:['250','2,5','0,25'], h:'1 L = 10 dL', x:'2,5 × 10 = 25 dL.' },
+    { q:'Un percorso è di 3 km e 400 m. In tutto quanti m sono?', a:'3400', w:['340','34.000','4300'], h:'3 km = 3000 m, poi aggiungi', x:'3000 + 400 = 3400 m.' },
+    { q:'Da 5 kg di pasta tolgo 750 g. Quanti grammi rimangono?', a:'4250', w:['4750','3250','4500'], h:'5 kg = 5000 g', x:'5000 - 750 = 4250 g.' },
+  ],
+  difficile: [
+    { q:'3 km 4 hm 5 dam = ___ m', a:'3450', w:['3045','34.500','3405'], h:'1km=1000m, 1hm=100m, 1dam=10m', x:'3000 + 400 + 50 = 3450 m.' },
+    { q:'2 t 3 q 4 kg = ___ kg', a:'2304', w:['234','23.040','2340'], h:'1 t=1000 kg, 1 q=100 kg', x:'2000 + 300 + 4 = 2304 kg.' },
+    { q:'Da un rotolo di 15 m di corda taglio pezzi da 1 m 20 cm. Quanti pezzi interi ottengo?', a:'12', w:['10','15','13'], h:'1 m 20 cm = 120 cm; 1500 cm ÷ 120 = ?', x:'1500 ÷ 120 = 12,5 → 12 pezzi interi.' },
+    { q:'Una strada lunga 2,4 km viene asfaltata per 1/3. Quanti metri sono stati asfaltati?', a:'800 m', w:['600 m','900 m','400 m'], h:'2,4 km = 2400 m; 2400 ÷ 3', x:'2400 ÷ 3 = 800 m.' },
+    { q:'Un treno va a 90 km/h. In 45 minuti quanti km percorre?', a:'67,5 km', w:['45 km','90 km','60 km'], h:'45 min = 3/4 di ora', x:'90 × 0,75 = 67,5 km.' },
+    { q:'Su una mappa (scala 1:50.000), un segmento di 4 cm corrisponde a quanti km reali?', a:'2 km', w:['200 km','0,2 km','20 km'], h:'4 cm × 50.000 = cm reali → converti', x:'4 × 50.000 = 200.000 cm = 2000 m = 2 km.' },
+    { q:'1 settimana e 3 giorni = ___ ore', a:'240', w:['216','168','264'], h:'7 + 3 = 10 giorni; × 24', x:'(7 + 3) × 24 = 10 × 24 = 240 ore.' },
+    { q:'1 ettaro = ___ m²', a:'10.000', w:['1000','100.000','100'], h:'1 ettaro = 100 m × 100 m', x:'1 ha = 10.000 m² (quadrato con lato 100 m).' },
+    { q:'Una bottiglia contiene 75 cL. Quante bottiglie per riempire un recipiente da 3 L?', a:'4', w:['3','5','6'], h:'3 L = 300 cL; 300 ÷ 75', x:'300 ÷ 75 = 4 bottiglie.' },
+    { q:'3 km 250 m − 1 km 800 m = ___', a:'1 km 450 m', w:['1 km 550 m','2 km 50 m','1 km 250 m'], h:'Converti tutto in metri, poi sottrai', x:'3250 m - 1800 m = 1450 m = 1 km 450 m.' },
+  ],
+};
+
+// ── Quiz Decimali ────────────────────────────────────────────
+export const DEC_QUIZ = {
+  facile: [
+    { q:'Quale numero è più grande: 0,5 o 0,8?', a:'0,8', w:['0,5','Sono uguali','Non si può dire'], h:'Confronta i decimi', x:'0,8 > 0,5 perché 8 decimi > 5 decimi.' },
+    { q:'Come si legge 3,7?', a:'Tre e sette decimi', w:['Trentasette','Tre virgola settanta','Tre e sette centesimi'], h:'La cifra dopo la virgola è il decimo', x:'3,7 = 3 interi + 7 decimi (= 7/10).' },
+    { q:'0,5 + 0,3 = ?', a:'0,8', w:['0,53','1,3','0,08'], h:'Somma le cifre dei decimi', x:'0,5 + 0,3 = 0,8 (5 decimi + 3 decimi = 8 decimi).' },
+    { q:'Quale delle seguenti è la più piccola?', a:'0,03', w:['0,3','0,30','Sono tutte uguali'], h:'0,3 e 0,30 sono uguali; confronta con 0,03', x:'0,03 < 0,3 = 0,30 (3 centesimi < 3 decimi).' },
+    { q:'1,5 − 0,8 = ?', a:'0,7', w:['0,3','1,3','0,57'], h:'Allinea la virgola e sottrai', x:'1,5 - 0,8 = 0,7 (15 decimi - 8 decimi = 7 decimi).' },
+    { q:'Converti in decimale: 3/10', a:'0,3', w:['3,0','0,03','30'], h:'I decimi si scrivono subito dopo la virgola', x:'3/10 = 0,3.' },
+    { q:'0,25 = ?/100', a:'25/100', w:['2/5','25/10','5/100'], h:'0,25 = 25 centesimi', x:'0,25 = 25 centesimi = 25/100 = 1/4.' },
+    { q:'Qual è la parte intera di 7,38?', a:'7', w:['7,3','0,38','38'], h:'È il numero prima della virgola', x:'7,38 → parte intera: 7; parte decimale: 0,38.' },
+    { q:'1,5 e 1,50 hanno lo stesso valore?', a:'Sì, sono uguali', w:['No, 1,50 è maggiore','No, 1,5 è maggiore','Non si può dire'], h:'Gli zeri finali dopo la virgola non cambiano il valore', x:'1,5 = 1,50. Gli zeri finali non cambiano il valore.' },
+    { q:'Ordina in modo crescente: 2,1 — 2,01 — 2,11', a:'2,01 < 2,1 < 2,11', w:['2,1 < 2,01 < 2,11','2,11 < 2,1 < 2,01','2,01 < 2,11 < 2,1'], h:'Confronta prima i decimi, poi i centesimi', x:'2,01 < 2,10 < 2,11.' },
+  ],
+  medio: [
+    { q:'3,45 + 2,7 = ?', a:'6,15', w:['6,12','5,15','6,05'], h:'Allinea le virgole prima di sommare', x:'3,45 + 2,70 = 6,15.' },
+    { q:'5,30 − 2,85 = ?', a:'2,45', w:['2,55','3,45','2,35'], h:'Allinea le virgole, poi sottrai', x:'5,30 - 2,85 = 2,45.' },
+    { q:'0,4 × 5 = ?', a:'2', w:['0,20','2,5','0,45'], h:'Moltiplica come intero, poi rimetti la virgola', x:'4 × 5 = 20; 1 cifra decimale → 2,0 = 2.' },
+    { q:'1,2 × 1,5 = ?', a:'1,8', w:['1,7','2,5','1,35'], h:'Moltiplica, poi conta le cifre decimali totali', x:'12 × 15 = 180; 2 cifre decimali → 1,80 = 1,8.' },
+    { q:'Arrotonda 3,468 al centesimo:', a:'3,47', w:['3,46','3,5','3,468'], h:'Guarda la terza cifra decimale', x:'Terza cifra = 8 ≥ 5 → arrotonda per eccesso → 3,47.' },
+    { q:'7,2 ÷ 4 = ?', a:'1,8', w:['1,2','2,8','0,18'], h:'Esegui la divisione: 72 ÷ 4 = ?', x:'72 ÷ 4 = 18; 1 cifra decimale → 1,8.' },
+    { q:'Converti 0,375 in frazione semplificata:', a:'3/8', w:['3/7','375/100','1/3'], h:'375/1000 → MCD = 125', x:'375/1000 ÷ 125 = 3/8.' },
+    { q:'Arrotonda 2,745 al decimo:', a:'2,7', w:['2,8','2,74','3,0'], h:'Guarda la seconda cifra decimale', x:'Seconda cifra = 4 < 5 → arrotonda per difetto → 2,7.' },
+    { q:'12,6 ÷ 3 = ?', a:'4,2', w:['4,5','3,2','6,2'], h:'126 ÷ 3 = ?', x:'126 ÷ 3 = 42; 1 cifra decimale → 4,2.' },
+    { q:'Quale fra 3,05 e 3,5 è più grande?', a:'3,5', w:['3,05','Sono uguali','Impossibile dirlo'], h:'3,5 = 3,50; confronta con 3,05', x:'3,50 > 3,05 (50 centesimi > 5 centesimi).' },
+  ],
+  difficile: [
+    { q:'3,14 × 5 = ?', a:'15,70', w:['15,28','16,4','14,70'], h:'Moltiplica come intero, poi la virgola', x:'314 × 5 = 1570; 2 cifre decimali → 15,70.' },
+    { q:'9,6 ÷ 0,4 = ?', a:'24', w:['2,4','0,24','96'], h:'Moltiplica entrambi per 10', x:'96 ÷ 4 = 24.' },
+    { q:'2,5² (2,5 al quadrato) = ?', a:'6,25', w:['5','6,5','4,25'], h:'2,5 × 2,5 = ?', x:'2,5 × 2,5 = 6,25.' },
+    { q:'0,125 = ?', a:'1/8', w:['1/4','1/16','2/8'], h:'0,125 = 125/1000 → semplifica', x:'125/1000 ÷ 125 = 1/8.' },
+    { q:'La media di 3,5 e 4,7 è:', a:'4,1', w:['4,2','4,0','8,2'], h:'(3,5 + 4,7) ÷ 2', x:'8,2 / 2 = 4,1.' },
+    { q:'Un pezzo di legno è lungo 2,4 m. Lo taglio in 6 pezzi uguali. Quanti cm è ogni pezzo?', a:'40 cm', w:['24 cm','36 cm','48 cm'], h:'2,4 m = 240 cm; 240 ÷ 6', x:'240 ÷ 6 = 40 cm.' },
+    { q:'Qual è il 15% di 80?', a:'12', w:['15','8','20'], h:'15% = 15/100; moltiplica per 80', x:'80 × 0,15 = 12.' },
+    { q:'Un prezzo di 45 euro aumenta del 20%. Diventa:', a:'54 euro', w:['49 euro','65 euro','50 euro'], h:'Aggiungi il 20% al prezzo originale', x:'45 × 1,20 = 54 euro (oppure: 45 + 9 = 54).' },
+    { q:'Un litro di latte costa 1,35 €. Quanto costano 4 litri?', a:'5,40 euro', w:['5,00 euro','5,85 euro','6,00 euro'], h:'1,35 × 4 = ?', x:'1,35 × 4 = 5,40 euro.' },
+    { q:'Ordina: 0,3 — 3/10 — 0,03 — 30%', a:'0,03 < 0,3 = 3/10 = 30%', w:['Tutti uguali','30% < 0,3 < 0,03','0,03 < 0,3 < 3/10 < 30%'], h:'Converti tutto in decimale', x:'0,03 < 0,30 = 0,30 = 0,30. (3/10=0,3=30%=0,3).' },
+  ],
+};
+
+// ── Formulario geometrico ────────────────────────────────────
+export const FORMULARIO = [
+  {
+    id:'quadrato', nm:'Quadrato', ic:'⬛', cl:['#4ECDC4','#45B7D1'],
+    props:['4 lati uguali','4 angoli retti (90°)','4 assi di simmetria'],
+    formulas:[
+      { nm:'Perimetro', f:'P = 4 × l', ex:'l = 5 cm → P = 20 cm' },
+      { nm:'Area',      f:'A = l²',   ex:'l = 5 cm → A = 25 cm²' },
+    ],
+  },
+  {
+    id:'rettangolo', nm:'Rettangolo', ic:'▬', cl:['#A29BFE','#6C5CE7'],
+    props:['2 coppie di lati uguali','4 angoli retti (90°)','2 assi di simmetria'],
+    formulas:[
+      { nm:'Perimetro', f:'P = 2 × (b + h)',  ex:'b=6, h=4 → P = 20 cm' },
+      { nm:'Area',      f:'A = b × h',         ex:'b=6, h=4 → A = 24 cm²' },
+    ],
+  },
+  {
+    id:'triangolo', nm:'Triangolo', ic:'🔺', cl:['#FF6B6B','#FF8E53'],
+    props:['3 lati','3 angoli (somma = 180°)','Tipi: equilatero, isoscele, scaleno'],
+    formulas:[
+      { nm:'Perimetro', f:'P = a + b + c',      ex:'3+4+5 = 12 cm' },
+      { nm:'Area',      f:'A = (b × h) / 2',    ex:'b=6, h=4 → A = 12 cm²' },
+    ],
+  },
+  {
+    id:'cerchio', nm:'Cerchio', ic:'⭕', cl:['#FD79A8','#E84393'],
+    props:['Tutti i punti equidistanti dal centro','Raggio r = metà del diametro','Diametro d = 2 × r'],
+    formulas:[
+      { nm:'Circonferenza', f:'C = 2 × π × r ≈ 6,28 × r',  ex:'r=5 → C ≈ 31,4 cm' },
+      { nm:'Area',          f:'A = π × r² ≈ 3,14 × r²',    ex:'r=5 → A ≈ 78,5 cm²' },
+    ],
+  },
+  {
+    id:'rombo', nm:'Rombo', ic:'🔷', cl:['#FDCB6E','#E17055'],
+    props:['4 lati uguali','Angoli opposti uguali','2 diagonali perpendicolari'],
+    formulas:[
+      { nm:'Perimetro', f:'P = 4 × l',        ex:'l=6 → P = 24 cm' },
+      { nm:'Area',      f:'A = (D × d) / 2',  ex:'D=10, d=6 → A = 30 cm²' },
+    ],
+  },
+  {
+    id:'trapezio', nm:'Trapezio', ic:'🔸', cl:['#55EFC4','#00B894'],
+    props:['4 lati','1 coppia di lati paralleli (basi)','Base maggiore B > base minore b'],
+    formulas:[
+      { nm:'Perimetro', f:'P = B + b + lato₁ + lato₂', ex:'' },
+      { nm:'Area',      f:'A = ((B + b) × h) / 2',     ex:'B=8, b=4, h=5 → A = 30 cm²' },
+    ],
+  },
+];

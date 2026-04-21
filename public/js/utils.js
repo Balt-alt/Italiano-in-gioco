@@ -117,6 +117,39 @@ export const CATS = [
     ]},
 ];
 
+// ── Categorie Matematica ─────────────────────────────────────
+export const MATH_CATS = [
+  { id:'operazioni', nm:'Operazioni', ic:'🔢', ds:'Addizione, sottrazione, moltiplicazione, divisione', cl:['#4ECDC4','#45B7D1'],
+    modes:[
+      { id:'calcolo',  nm:'Calcolo Veloce',    ic:'⚡', ds:'Risolvi operazioni a scelta multipla', tg:'Velocità' },
+      { id:'scrivi',   nm:'Scrivi il Risultato', ic:'✏️', ds:'Digita la risposta esatta', tg:'Precisione' },
+      { id:'colonna',  nm:'In Colonna',         ic:'📊', ds:'Operazioni in formato colonna', tg:'Tecnica' },
+    ]},
+  { id:'problemi', nm:'Problemi', ic:'📝', ds:'Situazioni reali da risolvere con la matematica', cl:['#FF6B6B','#FF8E53'],
+    modes:[
+      { id:'problema', nm:'Risolvi il Problema', ic:'🧩', ds:'Leggi e scegli la risposta giusta', tg:'Ragionamento' },
+    ]},
+  { id:'geometria', nm:'Geometria', ic:'📐', ds:'Figure, aree, perimetri e formule', cl:['#A29BFE','#6C5CE7'],
+    modes:[
+      { id:'formulario',  nm:'Formulario',    ic:'📋', ds:'Consulta tutte le formule geometriche', tg:'Riferimento' },
+      { id:'calcola-geo', nm:'Calcola!',      ic:'📏', ds:'Calcola area e perimetro delle figure', tg:'Calcolo' },
+      { id:'quiz-geo',    nm:'Quiz Figure',   ic:'❓', ds:'Proprietà e caratteristiche delle figure', tg:'Teoria' },
+    ]},
+  { id:'frazioni', nm:'Frazioni', ic:'½', ds:'Frazioni equivalenti, confronto e operazioni', cl:['#FD79A8','#E84393'],
+    modes:[
+      { id:'quiz-fraz',     nm:'Quiz Frazioni', ic:'❓', ds:'Domande sulle frazioni', tg:'Classico' },
+      { id:'confronta-fraz',nm:'Confronta',     ic:'⚖️', ds:'Quale frazione è più grande?', tg:'Confronto' },
+    ]},
+  { id:'misure', nm:'Misure', ic:'📏', ds:'Lunghezze, pesi, capacità, conversioni', cl:['#55EFC4','#00B894'],
+    modes:[
+      { id:'conversioni', nm:'Conversioni', ic:'🔄', ds:'Converti tra le unità di misura', tg:'Pratico' },
+    ]},
+  { id:'decimali', nm:'Decimali', ic:'🔟', ds:'Numeri decimali, confronto e operazioni', cl:['#FDCB6E','#E17055'],
+    modes:[
+      { id:'quiz-dec', nm:'Quiz Decimali', ic:'❓', ds:'Domande sui numeri decimali', tg:'Classico' },
+    ]},
+];
+
 // Badges config
 export const BADGES = [
   { id: 'fg', nm: 'Prima Partita', ic: '🎮', ds: 'Completa 1 partita', ck: p => p.games_played >= 1 },

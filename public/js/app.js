@@ -2,8 +2,9 @@
 // APP CONTROLLER - Router e schermate
 // ══════════════════════════════════════
 import { api } from './api.js';
-import { esc, escAttr, genId, shuffle as _shuffle, AVATARS, AVATAR_COLORS, CATS, BADGES } from './utils.js';
+import { esc, escAttr, genId, shuffle as _shuffle, AVATARS, AVATAR_COLORS, CATS, MATH_CATS, BADGES } from './utils.js';
 import { initGames, startGame, startReview, startChallenge, refreshProfile } from './games.js';
+import { initMathGames, startMathGame, refreshMathProfile } from './games-math.js';
 import { defaultConfig, renderAvatar, renderAvatarBuilder, avatarHTML } from './avatar.js';
 import { LESSONS } from './lessons.js';
 import { initOnlineChallenge, showOnlineLobby, initClassChallenge, showClassChallengeLobby } from './challenge.js';
@@ -19,6 +20,7 @@ function parseAvatar(raw) {
 
 let currentProfileId = null;
 let currentProfile = null;
+let currentSubject = 'italiano'; // 'italiano' | 'matematica'
 
 const main = () => document.getElementById('main-content');
 
@@ -39,10 +41,21 @@ function applyAccessibility() {
   document.body.classList.toggle('uppercase-text', !!currentProfile.uppercase_text);
 }
 
+function navigateMath(screen, param) {
+  switch (screen) {
+    case 'home':     showMathHome(); break;
+    case 'category': showMathCategory(param); break;
+    default:         showMathHome();
+  }
+}
+
 function navigate(screen, param) {
   switch (screen) {
-    case 'profiles':   showProfiles(); break;
-    case 'home':       showHome(); break;
+    case 'profiles':       showProfiles(); break;
+    case 'subject-select': showSubjectSelect(); break;
+    case 'home':           currentSubject === 'matematica' ? showMathHome() : showHome(); break;
+    case 'math-home':      showMathHome(); break;
+    case 'math-category':  showMathCategory(param); break;
     case 'category':   showCategory(param); break;
     case 'settings':   showSettings(); break;
     case 'badges':     showBadges(); break;
@@ -91,13 +104,14 @@ window._selectProfile = async (id) => {
   currentProfileId = id;
   currentProfile = await api.getProfile(id);
   initGames(id, currentProfile, navigate);
+  initMathGames(id, currentProfile, navigateMath);
   initOnlineChallenge(id, currentProfile, render, navigate);
   initClassChallenge(id, currentProfile, render, navigate);
   initDaily(id, render, navigate);
   initGlossary(render, navigate);
   initMinigames(render, navigate);
   applyAccessibility();
-  showHome();
+  showSubjectSelect();
 };
 
 window._addProfileScreen = () => {
@@ -199,6 +213,150 @@ async function showHome() {
 window._showCategory = (id) => showCategory(id);
 window._navigate = (screen) => navigate(screen);
 window._startReview = () => startReview();
+
+// ══════════════════════════════════════
+// SELEZIONE MATERIA
+// ══════════════════════════════════════
+function showSubjectSelect() {
+  if (!currentProfileId) return showProfiles();
+  const p = currentProfile;
+  const avCfg = parseAvatar(p?.avatar);
+  const lv = Math.floor((p?.xp || 0) / 200) + 1;
+  render(`
+    <div class="stats-bar">
+      <div class="stat">⭐ ${p?.xp || 0}</div>
+      <div class="stat">🔥 ${p?.streak || 0}</div>
+      <div class="stat">🏆 Lv.${lv}</div>
+      <div class="stat clickable" onclick="window._goProfiles()" style="padding:2px 10px">
+        <span class="avatar-inline">${avatarHTML(avCfg, 28)}</span> ${esc(p?.name || '')}
+      </div>
+    </div>
+    <div style="max-width:520px;margin:0 auto;padding:8px 0 24px">
+      <h1 class="gradient-title" style="text-align:center">Cosa vuoi studiare?</h1>
+      <p class="subtitle" style="text-align:center">Ciao ${esc(p?.name || '')}! Scegli la materia 📚</p>
+      <div class="subject-grid">
+        <div class="subject-card subject-ita" onclick="window._selectSubject('italiano')">
+          <div class="subject-flag">🇮🇹</div>
+          <div class="subject-nm">Italiano</div>
+          <div class="subject-ds">Grammatica, vocabolario, lettura e scrittura</div>
+          <div class="subject-modes">7 categorie · 26+ modalità</div>
+        </div>
+        <div class="subject-card subject-mat" onclick="window._selectSubject('matematica')">
+          <div class="subject-flag">🔢</div>
+          <div class="subject-nm">Matematica</div>
+          <div class="subject-ds">Operazioni, geometria, problemi e frazioni</div>
+          <div class="subject-modes">6 categorie · domande infinite</div>
+        </div>
+      </div>
+    </div>`);
+}
+
+window._selectSubject = (subject) => {
+  currentSubject = subject;
+  if (subject === 'matematica') { showMathHome(); }
+  else { showHome(); }
+};
+
+// ══════════════════════════════════════
+// MATEMATICA — HOME
+// ══════════════════════════════════════
+async function showMathHome() {
+  if (!currentProfileId) return showProfiles();
+  currentSubject = 'matematica';
+  currentProfile = await api.getProfile(currentProfileId);
+  refreshMathProfile(currentProfile);
+  applyAccessibility();
+  const p = currentProfile;
+  const avCfg = parseAvatar(p.avatar);
+  const lv = Math.floor(p.xp / 200) + 1;
+  const cs = p.category_scores || [];
+
+  render(`
+    <div class="stats-bar">
+      <div class="stat">⭐ ${p.xp}</div>
+      <div class="stat">🔥 ${p.streak}</div>
+      <div class="stat">🏆 Lv.${lv}</div>
+      <div class="stat clickable" onclick="window._goProfiles()" style="padding:2px 10px">
+        <span class="avatar-inline">${avatarHTML(avCfg, 28)}</span> ${esc(p.name)}
+      </div>
+    </div>
+    <div class="home-header">
+      <h1 class="gradient-title" style="background:linear-gradient(135deg,#4ECDC4,#A29BFE)">Matematica in Gioco! 🔢</h1>
+      <p class="subtitle">Ciao ${esc(p.name)}! Quale argomento vuoi esercitare? 🌟</p>
+    </div>
+    <div class="menu-grid">
+      ${MATH_CATS.map(c => {
+        const sc = cs.find(s => s.category === `math-${c.id}`);
+        return `<div class="menu-card" onclick="window._showMathCategory('${c.id}')">
+          <div class="card-accent" style="background:linear-gradient(90deg,${c.cl[0]},${c.cl[1]})"></div>
+          <span class="card-icon">${c.ic}</span>
+          <div class="card-title">${c.nm}</div>
+          <div class="card-desc">${c.ds}</div>
+          ${sc?.played ? `<div class="card-badge" style="background:${c.cl[0]}12;color:${c.cl[0]}">Best: ${sc.best_score}%</div>` : `<div class="card-badge" style="background:var(--border);color:var(--muted)">Nuovo!</div>`}
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="btn-group" style="margin-top:14px">
+      <button class="btn btn-ghost btn-sm" onclick="window._selectSubject('italiano')">🇮🇹 Passa all'Italiano</button>
+      <button class="btn btn-ghost btn-sm" onclick="window._navigate('settings')">⚙️ Impostazioni</button>
+      <button class="btn btn-ghost btn-sm" onclick="window._navigate('badges')">🏅 Traguardi</button>
+    </div>`);
+}
+
+window._showMathCategory = (id) => showMathCategory(id);
+
+// ══════════════════════════════════════
+// MATEMATICA — CATEGORIA
+// ══════════════════════════════════════
+let _mathSelDiff = 'facile'; // diff selezionata nella schermata categoria
+
+function showMathCategory(catId) {
+  const cat = MATH_CATS.find(c => c.id === catId);
+  if (!cat) { showMathHome(); return; }
+
+  render(`
+    <button class="nav-back" onclick="window._showMathHome()">← Menu Mat.</button>
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <span style="font-size:2.8rem">${cat.ic}</span>
+        <div>
+          <h2 style="margin-bottom:2px">${esc(cat.nm)}</h2>
+          <p style="color:var(--muted);font-size:.88rem;margin:0">${esc(cat.ds)}</p>
+        </div>
+      </div>
+      <div style="margin-top:14px">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:6px;font-weight:600">DIFFICOLTÀ</div>
+        <div class="btn-group" style="justify-content:flex-start">
+          ${['facile','medio','difficile'].map(d => `
+            <button id="diff-btn-${d}" class="btn btn-sm ${_mathSelDiff === d ? 'btn-primary' : 'btn-ghost'}"
+              onclick="window._mathSetDiff('${d}')">
+              ${ d === 'facile' ? '🟢 Facile' : d === 'medio' ? '🟡 Medio' : '🔴 Difficile' }
+            </button>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div style="font-size:.8rem;color:var(--muted);margin-bottom:8px;font-weight:600;padding:0 2px">SCEGLI LA MODALITÀ</div>
+    <div class="modes-grid">
+      ${cat.modes.map(m => `
+        <div class="mode-card ${m.id === 'formulario' ? 'mode-card-ref' : ''}" onclick="window._startMathGame('${cat.id}','${m.id}')">
+          <div class="mode-icon">${m.ic}</div>
+          <div class="mode-nm">${esc(m.nm)}</div>
+          <div class="mode-ds">${esc(m.ds)}</div>
+          <div class="mode-tag" style="background:${cat.cl[0]}18;color:${cat.cl[0]}">${esc(m.tg)}</div>
+        </div>`).join('')}
+    </div>`);
+}
+
+window._showMathHome = () => showMathHome();
+window._mathSetDiff = (d) => {
+  _mathSelDiff = d;
+  // aggiorna i bottoni senza re-render completo
+  ['facile','medio','difficile'].forEach(x => {
+    const btn = document.getElementById(`diff-btn-${x}`);
+    if (btn) { btn.className = `btn btn-sm ${x === d ? 'btn-primary' : 'btn-ghost'}`; }
+  });
+};
+window._startMathGame = (cat, mode) => startMathGame(cat, mode, _mathSelDiff);
 
 // ══════════════════════════════════════
 // PROGRESS MAP
