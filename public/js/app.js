@@ -834,6 +834,8 @@ async function showAdmin() {
     </div>
 
     <div class="admin-panel" id="panel-classChallenge">
+
+      <!-- STEP 1: Configura e genera domande -->
       <div class="card" style="margin-bottom:14px">
         <h3 style="margin-bottom:14px">🏫 Crea Sfida di Classe</h3>
         <div class="setting-row">
@@ -856,17 +858,30 @@ async function showAdmin() {
             <option value="20">20 domande</option>
           </select>
         </div>
-        <button class="btn btn-primary" onclick="window._createClassChallenge()">🎲 Crea Stanza</button>
+        <button class="btn btn-mint" onclick="window._previewClassQuestions()">📋 Genera & Anteprima</button>
         <div id="cc-create-error" style="color:var(--coral);font-size:.85rem;margin-top:8px;min-height:18px"></div>
       </div>
 
+      <!-- STEP 2: Anteprima e modifica domande -->
+      <div class="card" id="cc-preview-section" style="display:none;margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <h4 style="margin:0">📝 Domande — <span id="cc-q-count">0</span> selezionate</h4>
+          <button class="btn btn-ghost btn-sm" onclick="window._ccAddEmptyQuestion()">➕ Aggiungi domanda</button>
+        </div>
+        <div id="cc-questions-list"></div>
+        <div class="btn-group" style="justify-content:flex-start;margin-top:14px">
+          <button class="btn btn-primary" onclick="window._createClassChallenge()">🎲 Crea Stanza con queste domande</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: Stanza creata — partecipanti + avvio -->
       <div class="card" id="cc-room-section" style="display:none;margin-bottom:14px">
         <div style="text-align:center">
           <p style="color:var(--muted);font-size:.82rem;margin-bottom:8px">Scrivi questo codice alla lavagna per gli alunni</p>
           <div class="class-code-display" id="cc-code-display">——————</div>
         </div>
         <div style="margin:14px 0">
-          <div style="font-weight:700;font-size:.88rem;margin-bottom:8px;color:var(--muted)">👥 Partecipanti</div>
+          <div style="font-weight:700;font-size:.88rem;margin-bottom:8px;color:var(--muted)">👥 Partecipanti (<span id="cc-part-count">0</span>)</div>
           <div id="cc-participants" style="min-height:40px"></div>
         </div>
         <div class="btn-group" style="justify-content:flex-start;flex-wrap:wrap">
@@ -876,11 +891,13 @@ async function showAdmin() {
         </div>
       </div>
 
+      <!-- Live board durante la sfida -->
       <div class="card" id="cc-live-board" style="display:none;margin-bottom:14px">
         <h4 style="margin-bottom:10px">📊 Classifica Live</h4>
         <div id="cc-live-list"></div>
       </div>
 
+      <!-- Risultati finali -->
       <div class="card" id="cc-results" style="display:none">
         <h4 style="margin-bottom:10px">🏆 Risultati Finali</h4>
         <div id="cc-results-list"></div>
@@ -1136,20 +1153,100 @@ window._aiSaveSelected = async () => {
 // SFIDA DI CLASSE — Admin
 // ══════════════════════════════════════
 
-// Mappa categoria → banca domande
 const _ccBankMap = {
-  grammatica:   'gramQuiz',
-  vocabolario:  'vocabQuiz',
-  verbi:        'verbiQuiz',
-  ortografia:   'ortoQuiz',
-  comprensione: 'compSignificato',
-  analisi:      'analisiQuiz',
-  produzione:   'prodRegistro',
+  grammatica:'gramQuiz', vocabolario:'vocabQuiz', verbi:'verbiQuiz',
+  ortografia:'ortoQuiz', comprensione:'compSignificato',
+  analisi:'analisiQuiz', produzione:'prodRegistro',
 };
 
-let _adminCcCode   = null;
-let _adminCcSocket = null;
+let _adminCcCode      = null;
+let _adminCcSocket    = null;
 let _adminCcListening = false;
+let _adminCcPending   = []; // domande in anteprima (prima di creare la stanza)
+
+// ── Renders ──────────────────────────────────────────────────
+
+function _ccRenderQuestionsList() {
+  const listEl = document.getElementById('cc-questions-list');
+  const cntEl  = document.getElementById('cc-q-count');
+  if (!listEl) return;
+  if (cntEl) cntEl.textContent = _adminCcPending.length;
+  listEl.innerHTML = _adminCcPending.map((q, i) => `
+    <div class="cc-q-item" id="ccqi-${i}">
+      <div id="ccqi-${i}-view" style="display:flex;gap:8px;align-items:flex-start">
+        <span style="min-width:22px;font-weight:700;color:var(--muted);padding-top:2px">${i + 1}.</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;margin-bottom:3px;font-size:.9rem">${esc(q.q)}</div>
+          <div style="font-size:.8rem;color:var(--mint);margin-bottom:2px">✅ ${esc(q.a)}</div>
+          <div style="font-size:.76rem;color:var(--muted)">${(q.w||[]).map(w=>`❌ ${esc(w)}`).join(' · ')}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+          <button class="btn btn-ghost btn-sm" style="padding:4px 8px" onclick="window._ccqEdit(${i})">✏️</button>
+          <button class="btn btn-coral btn-sm" style="padding:4px 8px" onclick="window._ccqDelete(${i})">🗑</button>
+        </div>
+      </div>
+      <div id="ccqi-${i}-edit" style="display:none;padding-top:8px">
+        <input class="input" id="ccqi-${i}-q" value="${escAttr(q.q)}" placeholder="Domanda..." style="width:100%;margin-bottom:6px">
+        <input class="input" id="ccqi-${i}-a" value="${escAttr(q.a)}" placeholder="Risposta corretta..." style="width:100%;margin-bottom:6px">
+        ${[0,1,2].map(wi => `<input class="input" id="ccqi-${i}-w${wi}" value="${escAttr((q.w||[])[wi]||'')}" placeholder="Sbagliata ${wi+1}..." style="width:100%;margin-bottom:6px">`).join('')}
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-mint btn-sm" onclick="window._ccqSave(${i})">✓ Salva</button>
+          <button class="btn btn-ghost btn-sm" onclick="window._ccqCancel(${i})">Annulla</button>
+        </div>
+      </div>
+    </div>
+    <hr style="border:none;border-top:1px solid var(--border);margin:8px 0">`
+  ).join('');
+}
+
+// ── Editor domande ───────────────────────────────────────────
+
+window._previewClassQuestions = () => {
+  const cat   = document.getElementById('cc-cat')?.value || 'grammatica';
+  const diff  = document.getElementById('cc-diff')?.value || 'facile';
+  const count = parseInt(document.getElementById('cc-count')?.value) || 10;
+  const errEl = document.getElementById('cc-create-error');
+  if (errEl) errEl.textContent = '';
+  const bank = Q[_ccBankMap[cat]];
+  const pool = bank ? (bank[diff] || bank.facile || []) : [];
+  if (pool.length === 0) { if (errEl) errEl.textContent = 'Nessuna domanda disponibile.'; return; }
+  _adminCcPending = _shuffle([...pool]).slice(0, count).map(q => ({ q: q.q, a: q.a, w: (q.w||[]).slice(0,3) }));
+  document.getElementById('cc-preview-section').style.display = '';
+  _ccRenderQuestionsList();
+};
+
+window._ccqEdit = (i) => {
+  document.getElementById(`ccqi-${i}-view`).style.display = 'none';
+  document.getElementById(`ccqi-${i}-edit`).style.display = '';
+};
+window._ccqCancel = (i) => {
+  document.getElementById(`ccqi-${i}-view`).style.display = 'flex';
+  document.getElementById(`ccqi-${i}-edit`).style.display = 'none';
+};
+window._ccqSave = (i) => {
+  const qv = document.getElementById(`ccqi-${i}-q`)?.value.trim();
+  const av = document.getElementById(`ccqi-${i}-a`)?.value.trim();
+  if (!qv || !av) { alert('Domanda e risposta corretta sono obbligatorie.'); return; }
+  _adminCcPending[i] = {
+    q: qv, a: av,
+    w: [0,1,2].map(wi => document.getElementById(`ccqi-${i}-w${wi}`)?.value.trim()).filter(Boolean)
+  };
+  _ccRenderQuestionsList();
+};
+window._ccqDelete = (i) => {
+  if (_adminCcPending.length <= 1) { alert('Devi avere almeno una domanda.'); return; }
+  _adminCcPending.splice(i, 1);
+  _ccRenderQuestionsList();
+};
+window._ccAddEmptyQuestion = () => {
+  _adminCcPending.push({ q: '', a: '', w: ['', '', ''] });
+  _ccRenderQuestionsList();
+  // apri subito in modalità edit
+  const newIdx = _adminCcPending.length - 1;
+  setTimeout(() => window._ccqEdit(newIdx), 50);
+};
+
+// ── Socket admin ─────────────────────────────────────────────
 
 function _getAdminClassSocket() {
   if (!_adminCcSocket || !_adminCcSocket.connected) {
@@ -1159,8 +1256,9 @@ function _getAdminClassSocket() {
     _adminCcListening = true;
 
     _adminCcSocket.on('class-room-update', (room) => {
-      // Aggiorna lista partecipanti
       const partEl = document.getElementById('cc-participants');
+      const cntEl  = document.getElementById('cc-part-count');
+      if (cntEl) cntEl.textContent = room.participants.length;
       if (partEl) {
         partEl.innerHTML = room.participants.length === 0
           ? '<p style="color:var(--muted);font-size:.85rem">Nessun alunno ancora...</p>'
@@ -1169,10 +1267,9 @@ function _getAdminClassSocket() {
               <span style="display:inline-flex;align-items:center">${avatarHTML(parseAvatar(p.avatar), 28)}</span>
               <span style="font-weight:700;flex:1">${esc(p.name)}</span>
               ${room.state === 'playing' ? `<span style="font-weight:800;color:var(--lav)">${p.score}/${room.total}</span>` : ''}
-              ${p.finished ? '<span style="color:var(--mint);font-size:.8rem">✓</span>' : ''}
+              ${p.finished ? '<span style="color:var(--mint);font-size:.75rem">✓</span>' : ''}
             </div>`).join('');
       }
-      // Aggiorna live board
       const liveEl = document.getElementById('cc-live-list');
       if (liveEl && room.state === 'playing') {
         document.getElementById('cc-live-board').style.display = '';
@@ -1184,76 +1281,62 @@ function _getAdminClassSocket() {
               <span style="display:inline-flex;align-items:center">${avatarHTML(parseAvatar(p.avatar), 28)}</span>
               <span style="flex:1;font-weight:700">${esc(p.name)}</span>
               <span style="font-weight:900;color:var(--lav)">${p.score}/${room.total}</span>
-              ${p.finished ? '<span style="color:var(--mint);font-size:.8rem">✓</span>' : ''}
+              ${p.finished ? '<span style="color:var(--mint);font-size:.75rem">✓</span>' : ''}
             </div>`).join('');
       }
     });
 
-    _adminCcSocket.on('class-ended', ({ leaderboard, title }) => {
-      const medals = ['🥇', '🥈', '🥉'];
+    _adminCcSocket.on('class-ended', ({ leaderboard }) => {
+      const medals = ['🥇','🥈','🥉'];
       const resultsEl = document.getElementById('cc-results');
-      const listEl   = document.getElementById('cc-results-list');
+      const listEl    = document.getElementById('cc-results-list');
       if (resultsEl && listEl) {
         resultsEl.style.display = '';
         listEl.innerHTML = leaderboard.map(e => `
           <div class="cc-participant-row" style="padding:10px 14px">
-            <span style="font-size:1.3rem;min-width:30px">${medals[e.rank - 1] || e.rank + '.'}</span>
+            <span style="font-size:1.3rem;min-width:30px">${medals[e.rank-1] || e.rank + '.'}</span>
             <span style="display:inline-flex;align-items:center">${avatarHTML(parseAvatar(e.avatar), 32)}</span>
             <span style="font-weight:700;flex:1">${esc(e.name)}</span>
             <span style="font-weight:900;color:var(--lav)">${e.score}/${e.total}</span>
             <span style="color:var(--muted);font-size:.8rem">${e.pct}%</span>
           </div>`).join('');
       }
-      // nascondi btn fine, mostra risultati
-      const endBtn  = document.getElementById('cc-end-btn');
-      const startBtn = document.getElementById('cc-start-btn');
-      if (endBtn) endBtn.style.display = 'none';
-      if (startBtn) startBtn.style.display = '';
+      document.getElementById('cc-end-btn').style.display = 'none';
+      document.getElementById('cc-start-btn').style.display = '';
     });
 
-    _adminCcSocket.on('class-error', (msg) => {
-      const errEl = document.getElementById('cc-create-error');
-      if (errEl) errEl.textContent = msg;
+    _adminCcSocket.on('class-error', msg => {
+      const el = document.getElementById('cc-create-error');
+      if (el) el.textContent = msg;
     });
   }
   return _adminCcSocket;
 }
 
+// ── Azioni stanza ─────────────────────────────────────────────
+
 window._createClassChallenge = async () => {
-  const title = document.getElementById('cc-title')?.value.trim() || 'Sfida di Classe';
-  const cat   = document.getElementById('cc-cat')?.value || 'grammatica';
-  const diff  = document.getElementById('cc-diff')?.value || 'facile';
-  const count = parseInt(document.getElementById('cc-count')?.value) || 10;
-  const errEl = document.getElementById('cc-create-error');
+  const title  = document.getElementById('cc-title')?.value.trim() || 'Sfida di Classe';
+  const cat    = document.getElementById('cc-cat')?.value || 'grammatica';
+  const diff   = document.getElementById('cc-diff')?.value || 'facile';
+  const errEl  = document.getElementById('cc-create-error');
   if (errEl) errEl.textContent = '';
-
-  // Recupera domande dalla banca
-  const bankName = _ccBankMap[cat] || 'gramQuiz';
-  const bank = Q[bankName];
-  const pool = bank ? (bank[diff] || bank.facile || []) : [];
-  const questions = _shuffle([...pool]).slice(0, count).map(q => ({ q: q.q, a: q.a, w: (q.w || []).slice(0, 3) }));
-
-  if (questions.length === 0) {
-    if (errEl) errEl.textContent = 'Nessuna domanda disponibile per questa selezione.';
-    return;
-  }
-
+  if (_adminCcPending.length === 0) { if (errEl) errEl.textContent = 'Genera prima le domande.'; return; }
+  // Filtra domande incomplete
+  const questions = _adminCcPending.filter(q => q.q.trim() && q.a.trim());
+  if (questions.length === 0) { if (errEl) errEl.textContent = 'Nessuna domanda valida.'; return; }
   try {
     const { code } = await api.createClassChallenge({ title, questions, category: cat, difficulty: diff });
     _adminCcCode = code;
-
-    // Mostra sezione stanza
+    document.getElementById('cc-preview-section').style.display = 'none';
     document.getElementById('cc-room-section').style.display = '';
     document.getElementById('cc-code-display').textContent = code;
     document.getElementById('cc-results').style.display = 'none';
     document.getElementById('cc-live-board').style.display = 'none';
     document.getElementById('cc-start-btn').style.display = '';
     document.getElementById('cc-end-btn').style.display = 'none';
-
-    // Connetti socket admin
-    const sock = _getAdminClassSocket();
     const adminToken = sessionStorage.getItem('adminToken');
-    sock.emit('admin-join-class', { code, adminToken });
+    _getAdminClassSocket().emit('admin-join-class', { code, adminToken });
   } catch(e) {
     if (errEl) errEl.textContent = 'Errore: ' + e.message;
   }
@@ -1261,35 +1344,27 @@ window._createClassChallenge = async () => {
 
 window._startClassChallenge = () => {
   if (!_adminCcCode) return;
-  const adminToken = sessionStorage.getItem('adminToken');
-  _getAdminClassSocket().emit('start-class-challenge', { code: _adminCcCode, adminToken });
+  _getAdminClassSocket().emit('start-class-challenge', { code: _adminCcCode, adminToken: sessionStorage.getItem('adminToken') });
   document.getElementById('cc-start-btn').style.display = 'none';
   document.getElementById('cc-end-btn').style.display = '';
 };
-
 window._endClassChallenge = () => {
   if (!_adminCcCode) return;
-  const adminToken = sessionStorage.getItem('adminToken');
-  _getAdminClassSocket().emit('end-class-challenge', { code: _adminCcCode, adminToken });
+  _getAdminClassSocket().emit('end-class-challenge', { code: _adminCcCode, adminToken: sessionStorage.getItem('adminToken') });
   document.getElementById('cc-end-btn').style.display = 'none';
 };
-
 window._closeClassRoom = async () => {
-  if (!_adminCcCode) return;
-  try {
-    await api.deleteClassChallenge(_adminCcCode);
-  } catch(_) {}
-  _adminCcCode = null;
-  document.getElementById('cc-room-section').style.display = 'none';
-  document.getElementById('cc-live-board').style.display = 'none';
-  document.getElementById('cc-results').style.display = 'none';
+  if (_adminCcCode) { try { await api.deleteClassChallenge(_adminCcCode); } catch(_) {} }
+  _adminCcCode = null; _adminCcPending = [];
+  ['cc-room-section','cc-live-board','cc-results','cc-preview-section'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
 };
-
 window._resetClassChallenge = () => {
-  _adminCcCode = null;
-  document.getElementById('cc-room-section').style.display = 'none';
-  document.getElementById('cc-live-board').style.display = 'none';
-  document.getElementById('cc-results').style.display = 'none';
+  _adminCcCode = null; _adminCcPending = [];
+  ['cc-room-section','cc-live-board','cc-results','cc-preview-section'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
 };
 
 // ══════════════════════════════════════

@@ -359,6 +359,9 @@ let _ccNavigate  = null;
 let _ccCode      = null;
 let _ccGame      = { questions: [], ci: 0, sc: 0, tot: 0 };
 let _ccListening = false;
+let _ccAnswerLog = []; // { qi, q, selected, correct, isCorrect }
+let _ccLastBoard = null; // cache classifica finale
+let _ccLastTitle = '';
 
 export function initClassChallenge(profileId, profile, renderFn, navigateFn) {
   _ccProfileId = profileId;
@@ -417,6 +420,8 @@ function _getClassSocket() {
 
     sock.on('class-started', ({ questions, title, total }) => {
       _ccGame = { questions, ci: 0, sc: 0, tot: total };
+      _ccAnswerLog = []; // reset log per nuova sfida
+      _ccLastTitle = title || 'Sfida di Classe';
       _ccShowQuestion();
     });
 
@@ -436,7 +441,9 @@ function _getClassSocket() {
     });
 
     sock.on('class-ended', ({ leaderboard, title }) => {
-      _ccShowClassResults(leaderboard, title);
+      _ccLastBoard = leaderboard;
+      _ccLastTitle = title || _ccLastTitle;
+      _ccShowClassResults(leaderboard, _ccLastTitle);
     });
 
     sock.on('class-error', (msg) => {
