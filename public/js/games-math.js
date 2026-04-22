@@ -2,8 +2,9 @@
 // MOTORE GIOCHI — MATEMATICA  (con KaTeX)
 // ══════════════════════════════════════
 import { api } from './api.js';
-import { esc, shuffle, launchConfetti } from './utils.js';
+import { esc, shuffle, launchConfetti, MATH_CATS } from './utils.js';
 import * as QM from './questions-math.js';
+import { MATH_LESSONS } from './lessons.js';
 
 // ── Stato ────────────────────────────────────────────────────
 let _pid = null, _profile = null, _onNav = null;
@@ -572,5 +573,471 @@ function showFormulario() {
               </div>`).join('')}
           </div>
         </div>`).join('')}
+    </div>`);
+}
+
+// ══════════════════════════════════════
+// SFIDA DEL GIORNO — MATEMATICA
+// ══════════════════════════════════════
+
+// Chiave localStorage per il tracking "già fatto oggi"
+function _mathDailyKey() {
+  const today = new Date().toISOString().split('T')[0];
+  return `math-daily-${_pid}-${today}`;
+}
+
+// Genera 5 domande miste deterministiche basate sulla data
+function _pickMathDailyQuestions() {
+  const today = new Date().toISOString().split('T')[0];
+  const seed  = today.split('-').reduce((a, b) => parseInt(a) * 100 + parseInt(b), 0);
+  const rng   = (n) => { const x = Math.sin(seed + n) * 10000; return x - Math.floor(x); };
+
+  const diffs = ['facile', 'medio', 'difficile'];
+  const questions = [];
+
+  // 1. Operazione procedurale
+  const opTypes = ['+', '-', '×', '÷'];
+  const opDiff  = diffs[Math.floor(rng(1) * 3)];
+  const op      = opTypes[Math.floor(rng(2) * opTypes.length)];
+  questions.push({ ...genOp(opDiff, op), _cat: 'operazioni' });
+
+  // 2. Quiz Geometria
+  const geoDiff  = diffs[Math.floor(rng(3) * 3)];
+  const geoBank  = QM.GEO_QUIZ[geoDiff] || QM.GEO_QUIZ.facile;
+  const geoIdx   = Math.floor(rng(4) * geoBank.length);
+  questions.push({ ...geoBank[geoIdx], _cat: 'geometria' });
+
+  // 3. Quiz Frazioni
+  const frazDiff = diffs[Math.floor(rng(5) * 3)];
+  const frazBank = QM.FRAZ_QUIZ[frazDiff] || QM.FRAZ_QUIZ.facile;
+  const frazIdx  = Math.floor(rng(6) * frazBank.length);
+  questions.push({ ...frazBank[frazIdx], _cat: 'frazioni' });
+
+  // 4. Misure
+  const misDiff  = diffs[Math.floor(rng(7) * 3)];
+  const misBank  = QM.MISURE_QUIZ[misDiff] || QM.MISURE_QUIZ.facile;
+  const misIdx   = Math.floor(rng(8) * misBank.length);
+  questions.push({ ...misBank[misIdx], _cat: 'misure' });
+
+  // 5. Problema o decimali (alterni per giorno pari/dispari)
+  const dayNum = parseInt(today.split('-')[2]);
+  if (dayNum % 2 === 0) {
+    const probDiff = diffs[Math.floor(rng(9) * 3)];
+    const probBank = QM.PROBLEMI[probDiff] || QM.PROBLEMI.facile;
+    const probIdx  = Math.floor(rng(10) * probBank.length);
+    questions.push({ ...probBank[probIdx], _cat: 'problemi' });
+  } else {
+    const decDiff  = diffs[Math.floor(rng(9) * 3)];
+    const decBank  = QM.DEC_QUIZ[decDiff] || QM.DEC_QUIZ.facile;
+    const decIdx   = Math.floor(rng(10) * decBank.length);
+    questions.push({ ...decBank[decIdx], _cat: 'decimali' });
+  }
+
+  return questions.filter(Boolean);
+}
+
+export function showMathDailyChallenge() {
+  const key       = _mathDailyKey();
+  const doneData  = localStorage.getItem(key);
+
+  if (doneData) {
+    try {
+      const rec = JSON.parse(doneData);
+      ri(`
+        <button class="nav-back" onclick="window._onMathNav('home')">← Menu Mat.</button>
+        <div class="card" style="max-width:420px;margin:0 auto;text-align:center">
+          <div style="font-size:3.5rem;margin-bottom:8px">🌟</div>
+          <h2 style="margin-bottom:4px">Sfida Completata!</h2>
+          <p style="color:var(--muted);margin-bottom:20px">Torna domani per una nuova sfida matematica</p>
+          <div style="display:flex;justify-content:center;gap:24px;margin-bottom:20px">
+            <div style="text-align:center">
+              <div style="font-size:2.2rem;font-weight:900;color:var(--lav)">${rec.sc}/${rec.tot}</div>
+              <div style="font-size:.78rem;color:var(--muted)">Risposte corrette</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:2.2rem;font-weight:900;color:var(--sun)">+${rec.xp ?? 0} XP</div>
+              <div style="font-size:.78rem;color:var(--muted)">Guadagnati</div>
+            </div>
+          </div>
+          <button class="btn btn-ghost" onclick="window._onMathNav('home')">🏠 Torna al Menu</button>
+        </div>`);
+      return;
+    } catch (_) {}
+  }
+
+  const questions = _pickMathDailyQuestions();
+  _runMathDaily(questions);
+}
+
+const _catColors = {
+  operazioni: '#4ECDC4', geometria: '#A29BFE', frazioni: '#FDCB6E',
+  misure: '#55EFC4', problemi: '#FF6B6B', decimali: '#6C5CE7',
+};
+const _catIcons = {
+  operazioni: '🔢', geometria: '📐', frazioni: '½',
+  misure: '📏', problemi: '📝', decimali: '🔟',
+};
+
+function _runMathDaily(questions) {
+  let ci = 0, sc = 0;
+  const tot = questions.length;
+
+  function showDQ() {
+    const q   = questions[ci];
+    const pct = (ci / tot) * 100;
+    const opts = shuffle([q.a, ...(q.w || []).slice(0, 3)]);
+    const cl   = _catColors[q._cat] || '#4ECDC4';
+    const ic   = _catIcons[q._cat] || '🌟';
+
+    ri(`
+      <div class="quiz-area">
+        <div class="progress-wrap">
+          <div class="progress-bg"><div class="progress-fill" style="width:${pct}%"></div></div>
+          <span class="progress-text">${ci + 1}/${tot}</span>
+        </div>
+        <div class="category-tag" style="background:${cl}12;color:${cl}">${ic} Sfida del Giorno 🌟</div>
+        <div class="question-text">${q.q}</div>
+        ${q.h ? `<div class="hint-chip">💡 ${q.h}</div>` : ''}
+        <div class="answers-grid">
+          ${opts.map(o => answerBtn(o, q.a)).join('')}
+        </div>
+        <div id="daily-math-fb"></div>
+        <div id="daily-math-next" style="display:none" class="btn-group">
+          <button class="btn btn-primary" onclick="window._mathDailyNext()">Avanti ➜</button>
+        </div>
+      </div>`);
+
+    window._mathDailyNext = () => {
+      ci++;
+      if (ci >= tot) _endMathDaily(sc, tot);
+      else showDQ();
+    };
+  }
+
+  // Sovrascriviamo _mathMcqAnswer solo per il daily (ci e sc sono closure)
+  window._mathMcqAnswer = (btn, correct) => {
+    document.querySelectorAll('.answer-btn').forEach(b => b.disabled = true);
+    const sel = btn.dataset.val;
+    const ok  = sel === correct;
+    btn.classList.add(ok ? 'correct' : 'wrong');
+    if (!ok) document.querySelectorAll('.answer-btn').forEach(b => {
+      if (b.dataset.val === correct) b.classList.add('correct');
+    });
+    if (ok) sc++;
+    const q = questions[ci];
+    $el('daily-math-fb').innerHTML = ok
+      ? `<div class="feedback ok">✅ Esatto!${q.x ? `<div class="explain">${q.x}</div>` : ''}</div>`
+      : `<div class="feedback no">❌ Era: <strong>${mathDisplay(correct)}</strong>${q.x ? `<div class="explain">${q.x}</div>` : ''}</div>`;
+    $el('daily-math-next').style.display = 'flex';
+    _autoMath();
+    api.updateStreak(_pid, ok).catch(() => {});
+  };
+
+  showDQ();
+}
+
+async function _endMathDaily(sc, tot) {
+  let xpEarned = 0;
+  try { const res = await api.saveGameResult(_pid, 'math-daily', sc, tot); xpEarned = res?.xpEarned ?? 0; }
+  catch (_) {}
+
+  // Salva in localStorage per bloccare il replay odierno
+  localStorage.setItem(_mathDailyKey(), JSON.stringify({ sc, tot, xp: xpEarned }));
+
+  if (sc === tot) setTimeout(launchConfetti, 300);
+
+  const pct    = Math.round((sc / tot) * 100);
+  const emoji  = pct === 100 ? '🏆' : pct >= 60 ? '⭐' : '💪';
+  const msg    = pct === 100 ? 'Perfetto! Maestro della matematica!' :
+                 pct >= 80  ? 'Ottimo lavoro!' :
+                 pct >= 60  ? 'Bene! Continua a esercitarti.' : 'Non mollare, ci si migliora!';
+
+  ri(`
+    <div class="card" style="max-width:420px;margin:0 auto;text-align:center">
+      <div style="font-size:4rem;margin:8px 0">${emoji}</div>
+      <h2 style="margin-bottom:4px">Sfida del Giorno Completata!</h2>
+      <p style="color:var(--muted);margin-bottom:24px">${msg}</p>
+      <div style="display:flex;justify-content:center;gap:32px;margin-bottom:24px">
+        <div>
+          <div style="font-size:2.4rem;font-weight:900;color:var(--lav)">${sc}/${tot}</div>
+          <div style="font-size:.8rem;color:var(--muted)">Corrette</div>
+        </div>
+        <div>
+          <div style="font-size:2.4rem;font-weight:900;color:var(--sun)">+${xpEarned}</div>
+          <div style="font-size:.8rem;color:var(--muted)">XP guadagnati</div>
+        </div>
+      </div>
+      ${pct === 100 ? `<div style="padding:10px;background:rgba(255,209,0,.1);border-radius:12px;margin-bottom:16px;font-weight:700;color:var(--sun)">🌟 Punteggio Perfetto!</div>` : ''}
+      <div class="btn-group" style="flex-direction:column;gap:10px">
+        <button class="btn btn-primary" onclick="window._onMathNav('home')" style="background:linear-gradient(135deg,#4ECDC4,#A29BFE)">🔢 Continua a giocare!</button>
+        <button class="btn btn-ghost" onclick="window._onMathNav('home')">🏠 Torna al Menu</button>
+      </div>
+      <p style="font-size:.78rem;color:var(--muted);margin-top:14px">La prossima sfida sarà disponibile domani</p>
+    </div>`);
+}
+
+// ══════════════════════════════════════
+// MINI-LEZIONI — MATEMATICA
+// ══════════════════════════════════════
+export function showMathLessons() {
+  ri(`
+    <button class="nav-back" onclick="window._onMathNav('home')">← Menu Mat.</button>
+    <div class="card">
+      <h2 style="margin-bottom:8px">📖 Mini-Lezioni di Matematica</h2>
+      <p style="color:var(--muted);font-size:.88rem;margin-bottom:16px">Ripassa le regole prima di giocare!</p>
+      ${MATH_CATS.map(cat => {
+        const lessons = MATH_LESSONS[cat.id] || [];
+        if (!lessons.length) return '';
+        return `
+          <div style="margin-bottom:18px">
+            <div style="font-weight:700;font-size:1.05rem;margin-bottom:8px;color:${cat.cl[0]}">${cat.ic} ${esc(cat.nm)}</div>
+            ${lessons.map((l, i) => `
+              <div class="lesson-card" onclick="window._openMathLesson('${cat.id}',${i})">
+                <div class="lesson-title">📄 ${esc(l.title)}</div>
+                <div class="lesson-arrow">→</div>
+              </div>`).join('')}
+          </div>`;
+      }).join('')}
+    </div>`);
+}
+
+window._openMathLesson = (catId, idx) => {
+  const cat     = MATH_CATS.find(c => c.id === catId);
+  const lessons = MATH_LESSONS[catId] || [];
+  const lesson  = lessons[idx];
+  if (!lesson || !cat) return;
+
+  ri(`
+    <button class="nav-back" onclick="window._showMathLessons()">← Lezioni</button>
+    <div class="card lesson-detail">
+      <div class="category-tag" style="background:${cat.cl[0]}12;color:${cat.cl[0]};margin-bottom:12px">${cat.ic} ${esc(cat.nm)}</div>
+      <h2 style="margin-bottom:16px">${esc(lesson.title)}</h2>
+      <div class="lesson-content">${lesson.content.replace(/\n/g, '<br>')}</div>
+      <div class="btn-group" style="margin-top:20px">
+        ${idx > 0 ? `<button class="btn btn-ghost btn-sm" onclick="window._openMathLesson('${catId}',${idx - 1})">← Precedente</button>` : ''}
+        ${idx < lessons.length - 1 ? `<button class="btn btn-primary btn-sm" onclick="window._openMathLesson('${catId}',${idx + 1})">Prossima →</button>` : ''}
+        <button class="btn btn-mint btn-sm" onclick="window._onMathNav('category','${catId}')">🎮 Gioca!</button>
+      </div>
+    </div>`);
+};
+
+window._showMathLessons = () => showMathLessons();
+
+// ══════════════════════════════════════
+// SFIDE — MATEMATICA (locale tra 2 profili)
+// ══════════════════════════════════════
+export function showMathSfide(profilesFn) {
+  ri(`
+    <button class="nav-back" onclick="window._onMathNav('home')">← Menu Mat.</button>
+    <div class="card" style="max-width:440px;margin:0 auto;text-align:center">
+      <div style="font-size:3rem;margin-bottom:8px">⚔️</div>
+      <h2 style="margin-bottom:4px">Sfide di Matematica</h2>
+      <p style="color:var(--muted);font-size:.88rem;margin-bottom:24px">Scegli come vuoi sfidarti</p>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <button class="btn btn-primary" style="padding:18px;font-size:1rem;justify-content:flex-start;gap:14px"
+          onclick="window._mathLocalChallenge()">
+          <span style="font-size:1.6rem">📱</span>
+          <div style="text-align:left">
+            <div style="font-weight:800">Sfida Locale</div>
+            <div style="font-size:.8rem;font-weight:400;opacity:.85">Stesso dispositivo, a turni — chi fa più punti vince!</div>
+          </div>
+        </button>
+        <button class="btn btn-ghost" style="padding:18px;font-size:1rem;justify-content:flex-start;gap:14px"
+          onclick="window._mathSfidaGiorno()">
+          <span style="font-size:1.6rem">🌟</span>
+          <div style="text-align:left">
+            <div style="font-weight:800">Sfida del Giorno</div>
+            <div style="font-size:.8rem;font-weight:400;opacity:.85">5 domande miste su tutte le categorie</div>
+          </div>
+        </button>
+      </div>
+    </div>`);
+}
+
+window._mathLocalChallenge = async () => {
+  // Carica i profili dalla API tramite callback registrata dall'app
+  const profiles = window._mathGetProfiles ? await window._mathGetProfiles() : [];
+  const others   = profiles.filter(p => p.id !== _pid);
+
+  if (!others.length) {
+    ri(`
+      <button class="nav-back" onclick="window._showMathSfide()">← Sfide</button>
+      <div class="card" style="text-align:center">
+        <div style="font-size:3rem;margin-bottom:12px">📱</div>
+        <h2>Sfida Locale</h2>
+        <p style="color:var(--muted);margin:16px 0">Serve almeno un altro profilo per sfidarsi!<br>Creane uno dalla schermata iniziale.</p>
+        <div class="btn-group"><button class="btn btn-ghost" onclick="window._onMathNav('home')">🏠 Menu</button></div>
+      </div>`);
+    return;
+  }
+
+  ri(`
+    <button class="nav-back" onclick="window._showMathSfide()">← Sfide</button>
+    <div class="card" style="text-align:center;max-width:440px;margin:0 auto">
+      <div style="font-size:3rem;margin-bottom:8px">📱</div>
+      <h2 style="margin-bottom:4px">Sfida Locale — Matematica</h2>
+      <p style="color:var(--muted);margin-bottom:16px">Stesse domande, chi fa meglio vince!</p>
+      <div style="text-align:left;margin-bottom:16px">
+        <div class="setting-row"><label>👤 Sfida contro:</label>
+          <select id="math-chal-opponent">
+            ${others.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="setting-row"><label>📐 Categoria:</label>
+          <select id="math-chal-cat">
+            ${MATH_CATS.map(c => `<option value="${esc(c.id)}">${c.ic} ${esc(c.nm)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="setting-row"><label>⚡ Difficoltà:</label>
+          <select id="math-chal-diff">
+            <option value="facile">🟢 Facile</option>
+            <option value="medio" selected>🟡 Medio</option>
+            <option value="difficile">🔴 Difficile</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="window._launchMathChallenge()">Inizia la Sfida! ⚔️</button>
+      </div>
+    </div>`);
+};
+
+window._showMathSfide    = () => showMathSfide();
+window._mathSfidaGiorno  = () => showMathDailyChallenge();
+
+window._launchMathChallenge = () => {
+  const opponentId = document.getElementById('math-chal-opponent')?.value;
+  const cat        = document.getElementById('math-chal-cat')?.value;
+  const diff       = document.getElementById('math-chal-diff')?.value || 'medio';
+  if (!opponentId || !cat) return;
+
+  // Genera le domande (stesse per entrambi i giocatori)
+  const qs = _generateChallengeQuestions(cat, diff, 10);
+  _runMathChallengeRound(qs, cat, diff, _pid, opponentId, 0, 0, true);
+};
+
+function _generateChallengeQuestions(cat, diff, n) {
+  if (cat === 'operazioni')  return Array.from({ length: n }, () => genOp(diff));
+  if (cat === 'geometria')   return Array.from({ length: n }, () => genGeo(diff));
+  if (cat === 'frazioni') {
+    const bank = QM.FRAZ_QUIZ[diff] || QM.FRAZ_QUIZ.facile;
+    return shuffle([...bank]).slice(0, Math.min(n, bank.length));
+  }
+  if (cat === 'misure') {
+    const bank = QM.MISURE_QUIZ[diff] || QM.MISURE_QUIZ.facile;
+    return shuffle([...bank]).slice(0, Math.min(n, bank.length));
+  }
+  if (cat === 'decimali') {
+    const bank = QM.DEC_QUIZ[diff] || QM.DEC_QUIZ.facile;
+    return shuffle([...bank]).slice(0, Math.min(n, bank.length));
+  }
+  if (cat === 'problemi') {
+    const bank = QM.PROBLEMI[diff] || QM.PROBLEMI.facile;
+    return shuffle([...bank]).slice(0, Math.min(n, bank.length));
+  }
+  return Array.from({ length: n }, () => genOp(diff));
+}
+
+function _runMathChallengeRound(qs, cat, diff, p1id, p2id, sc1, sc2, isP1Turn) {
+  const currentPid = isP1Turn ? p1id : p2id;
+  const catInfo    = MATH_CATS.find(c => c.id === cat) || MATH_CATS[0];
+  let ci = 0, sc = 0;
+  const tot = qs.length;
+
+  // Mostra schermata "passa il dispositivo"
+  ri(`
+    <div class="card" style="max-width:420px;margin:40px auto;text-align:center">
+      <div style="font-size:3rem;margin-bottom:12px">${isP1Turn ? '🥇' : '🥈'}</div>
+      <h2 style="margin-bottom:6px">${isP1Turn ? 'Giocatore 1' : 'Giocatore 2'}</h2>
+      <p style="color:var(--muted);margin-bottom:24px">Passa il dispositivo al tuo sfidante!</p>
+      <button class="btn btn-primary" onclick="window._startChalRound()">Sono pronto! 🚀</button>
+    </div>`);
+
+  window._startChalRound = () => {
+    function showChalQ() {
+      if (ci >= tot) {
+        // Fine turno corrente
+        if (isP1Turn) {
+          _runMathChallengeRound(qs, cat, diff, p1id, p2id, sc, sc2, false);
+        } else {
+          _showMathChalResult(cat, diff, sc1, sc, p1id, p2id);
+        }
+        return;
+      }
+
+      const q    = qs[ci];
+      const pct  = (ci / tot) * 100;
+      const opts = shuffle([q.a, ...(q.w || []).slice(0, 3)]);
+
+      ri(`
+        <div class="quiz-area">
+          <div class="progress-wrap">
+            <div class="progress-bg"><div class="progress-fill" style="width:${pct}%"></div></div>
+            <span class="progress-text">${ci + 1}/${tot}</span>
+          </div>
+          <div class="category-tag" style="background:${catInfo.cl[0]}12;color:${catInfo.cl[0]}">${catInfo.ic} ${isP1Turn ? '🥇 G1' : '🥈 G2'} · Sfida</div>
+          <div class="question-text">${q.q}</div>
+          ${q.h ? `<div class="hint-chip">💡 ${q.h}</div>` : ''}
+          <div class="answers-grid">
+            ${opts.map(o => answerBtn(o, q.a)).join('')}
+          </div>
+          <div id="chal-fb"></div>
+          <div id="chal-next" style="display:none" class="btn-group">
+            <button class="btn btn-primary" onclick="window._chalNext()">Avanti ➜</button>
+          </div>
+        </div>`);
+
+      window._chalNext = () => { ci++; showChalQ(); };
+
+      window._mathMcqAnswer = (btn, correct) => {
+        document.querySelectorAll('.answer-btn').forEach(b => b.disabled = true);
+        const sel = btn.dataset.val;
+        const ok  = sel === correct;
+        btn.classList.add(ok ? 'correct' : 'wrong');
+        if (!ok) document.querySelectorAll('.answer-btn').forEach(b => {
+          if (b.dataset.val === correct) b.classList.add('correct');
+        });
+        if (ok) sc++;
+        const q2 = qs[ci];
+        $el('chal-fb').innerHTML = ok
+          ? `<div class="feedback ok">✅ Esatto!${q2.x ? `<div class="explain">${q2.x}</div>` : ''}</div>`
+          : `<div class="feedback no">❌ Era: <strong>${mathDisplay(correct)}</strong>${q2.x ? `<div class="explain">${q2.x}</div>` : ''}</div>`;
+        $el('chal-next').style.display = 'flex';
+        _autoMath();
+      };
+    }
+    showChalQ();
+  };
+}
+
+async function _showMathChalResult(cat, diff, sc1, sc2, p1id, p2id) {
+  const profiles = window._mathGetProfiles ? await window._mathGetProfiles() : [];
+  const p1name   = profiles.find(p => p.id === p1id)?.name || 'Giocatore 1';
+  const p2name   = profiles.find(p => p.id === p2id)?.name || 'Giocatore 2';
+  const winner   = sc1 > sc2 ? p1name : sc2 > sc1 ? p2name : null;
+  const catInfo  = MATH_CATS.find(c => c.id === cat) || MATH_CATS[0];
+
+  if (winner) setTimeout(launchConfetti, 300);
+
+  ri(`
+    <div class="card" style="max-width:440px;margin:0 auto;text-align:center">
+      <div style="font-size:3.5rem;margin-bottom:12px">${winner ? '🏆' : '🤝'}</div>
+      <h2 style="margin-bottom:4px">${winner ? `${esc(winner)} vince!` : 'Pareggio!'}</h2>
+      <p style="color:var(--muted);margin-bottom:20px">${catInfo.ic} ${esc(catInfo.nm)} · ${esc(diff)}</p>
+      <div style="display:flex;justify-content:center;gap:20px;margin-bottom:24px">
+        <div class="result-stat" style="flex:1">
+          <div class="result-stat-val" style="color:${sc1 >= sc2 ? 'var(--mint)' : 'var(--muted)'}">${sc1}</div>
+          <div class="result-stat-lbl">🥇 ${esc(p1name)}</div>
+        </div>
+        <div style="font-size:2rem;align-self:center">⚔️</div>
+        <div class="result-stat" style="flex:1">
+          <div class="result-stat-val" style="color:${sc2 >= sc1 ? 'var(--mint)' : 'var(--muted)'}">${sc2}</div>
+          <div class="result-stat-lbl">🥈 ${esc(p2name)}</div>
+        </div>
+      </div>
+      <div class="btn-group" style="justify-content:center">
+        <button class="btn btn-primary" onclick="window._showMathSfide()">🔄 Nuova Sfida</button>
+        <button class="btn btn-ghost" onclick="window._onMathNav('home')">🏠 Menu</button>
+      </div>
     </div>`);
 }

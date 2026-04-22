@@ -4,13 +4,14 @@
 import { api } from './api.js';
 import { esc, escAttr, genId, shuffle as _shuffle, AVATARS, AVATAR_COLORS, CATS, MATH_CATS, BADGES } from './utils.js';
 import { initGames, startGame, startReview, startChallenge, refreshProfile } from './games.js';
-import { initMathGames, startMathGame, refreshMathProfile } from './games-math.js';
+import { initMathGames, startMathGame, refreshMathProfile, showMathDailyChallenge, showMathLessons, showMathSfide } from './games-math.js';
 import { defaultConfig, renderAvatar, renderAvatarBuilder, avatarHTML } from './avatar.js';
 import { LESSONS } from './lessons.js';
 import { initOnlineChallenge, showOnlineLobby, initClassChallenge, showClassChallengeLobby } from './challenge.js';
 import * as Q from './questions.js';
 import { initDaily, showDailyChallenge } from './daily.js';
 import { initGlossary, showGlossary } from './glossary.js';
+import { initMathGlossary, showMathGlossary } from './glossary-math.js';
 import { initMinigames, showMinigames } from './minigames.js';
 
 function parseAvatar(raw) {
@@ -43,9 +44,14 @@ function applyAccessibility() {
 
 function navigateMath(screen, param) {
   switch (screen) {
-    case 'home':     showMathHome(); break;
-    case 'category': showMathCategory(param); break;
-    default:         showMathHome();
+    case 'home':         showMathHome(); break;
+    case 'category':     showMathCategory(param); break;
+    case 'math-daily':   showMathDailyChallenge(); break;
+    case 'math-sfide':   showMathSfide(); break;
+    case 'math-lessons': showMathLessons(); break;
+    case 'math-glossary':showMathGlossary(); break;
+    case 'math-badges':  showBadges(); break;
+    default:             showMathHome();
   }
 }
 
@@ -109,7 +115,12 @@ window._selectProfile = async (id) => {
   initClassChallenge(id, currentProfile, render, navigate);
   initDaily(id, render, navigate);
   initGlossary(render, navigate);
+  initMathGlossary(render, navigateMath);
   initMinigames(render, navigate);
+  // Callback per sfide matematiche locali (necessita lista profili)
+  window._mathGetProfiles = () => api.getProfiles();
+  // Collega _mathNav al navigateMath
+  window._mathNav = (screen, param) => navigateMath(screen, param);
   applyAccessibility();
   showSubjectSelect();
 };
@@ -271,6 +282,10 @@ async function showMathHome() {
   const lv = Math.floor(p.xp / 200) + 1;
   const cs = p.category_scores || [];
 
+  // Controlla se la sfida del giorno è già stata completata (localStorage)
+  const today = new Date().toISOString().split('T')[0];
+  const mathDailyDone = !!localStorage.getItem(`math-daily-${currentProfileId}-${today}`);
+
   render(`
     <div class="stats-bar">
       <div class="stat">⭐ ${p.xp}</div>
@@ -296,11 +311,28 @@ async function showMathHome() {
         </div>`;
       }).join('')}
     </div>
+
+    <!-- Banner Sfida del Giorno Matematica -->
+    <div onclick="navigateMath_daily()" style="cursor:pointer;background:linear-gradient(135deg,#4ECDC4,#45B7D1);border-radius:var(--r);padding:14px 18px;margin-top:20px;display:flex;align-items:center;gap:14px;box-shadow:0 4px 14px rgba(78,205,196,.3)">
+      <span style="font-size:2rem">🌟</span>
+      <div style="flex:1">
+        <div style="font-weight:800;color:#fff;font-size:1rem">Sfida del Giorno</div>
+        <div style="font-size:.8rem;color:rgba(255,255,255,.85)">${mathDailyDone ? '✅ Già completata oggi! Torna domani.' : '5 domande miste · Operazioni, Geometria, Frazioni e altro!'}</div>
+      </div>
+      ${mathDailyDone ? '<span style="font-size:1.4rem">✅</span>' : '<span style="background:rgba(255,255,255,.2);color:#fff;font-weight:700;padding:6px 14px;border-radius:50px;font-size:.85rem">Gioca →</span>'}
+    </div>
+
     <div class="btn-group" style="margin-top:14px">
-      <button class="btn btn-ghost btn-sm" onclick="window._selectSubject('italiano')">🇮🇹 Passa all'Italiano</button>
+      <button class="btn btn-mint btn-sm"  onclick="window._mathNav('math-sfide')">⚔️ Sfide</button>
+      <button class="btn btn-ghost btn-sm" onclick="window._mathNav('math-glossary')">📐 Glossario</button>
+      <button class="btn btn-ghost btn-sm" onclick="window._mathNav('math-lessons')">📖 Lezioni</button>
+      <button class="btn btn-ghost btn-sm" onclick="window._selectSubject('italiano')">🇮🇹 Italiano</button>
       <button class="btn btn-ghost btn-sm" onclick="window._navigate('settings')">⚙️ Impostazioni</button>
       <button class="btn btn-ghost btn-sm" onclick="window._navigate('badges')">🏅 Traguardi</button>
     </div>`);
+
+  // Funzione locale per navigare alla daily senza esposizione globale
+  window.navigateMath_daily = () => navigateMath('math-daily');
 }
 
 window._showMathCategory = (id) => showMathCategory(id);
