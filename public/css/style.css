@@ -580,3 +580,19 @@ h1, h2, h3 { font-family: var(--fd); }
   font-weight: 600;
   margin-top: 8px;
 }
+
+/* ── KaTeX overrides ─────────────────────────────────────── */
+/* Allinea la dimensione del font con il testo circostante    */
+.katex { font-size: 1.05em; }
+/* Le equazioni display ($$...$$) hanno margini compatti      */
+.katex-display { margin: .4em 0 !important; overflow-x: auto; overflow-y: hidden; }
+/* Nei bottoni risposta le frazioni restano leggibili         */
+.answer-btn .katex { font-size: 1.1em; }
+/* Nel testo della domanda ingrandiamo un po'                 */
+.question-text .katex { font-size: 1em; }
+/* Nelle spiegazioni (feedback) dimensioni leggermente ridotte */
+.feedback .katex { font-size: .95em; }
+/* Nei chip hint KaTeX non deve sporgere                      */
+.hint-chip .katex { font-size: .9em; }
+/* Overflow orizzontale per dispositivi stretti               */
+.explain, .question-text { overflow-x: auto; }
